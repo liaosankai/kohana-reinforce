@@ -22,20 +22,22 @@ class Reinforce_ORM extends Kohana_ORM {
     {
         $className = 'Model_' . Inflector::words_to_upper(Inflector::underscore($model));
         $modelClass = new ReflectionClass($className);
-        return $modelClass->newInstanceArgs(array($id));
+        return  $modelClass->newInstanceArgs(array($id));
     }
 
-    public function _initialize()
-    {
-        parent::_initialize();
-        $parent_has_one = arr::get(get_class_vars(get_parent_class($this)), '_has_one', array());
-        $parent_has_many = arr::get(get_class_vars(get_parent_class($this)), '_has_many', array());
-        $parent_belongs_to = arr::get(get_class_vars(get_parent_class($this)), '_belongs_to', array());
+    /*
+      public function _initialize()
+      {
+      parent::_initialize();
+      $parent_has_one = arr::get(get_class_vars(get_parent_class($this)), '_has_one', array());
+      $parent_has_many = arr::get(get_class_vars(get_parent_class($this)), '_has_many', array());
+      $parent_belongs_to = arr::get(get_class_vars(get_parent_class($this)), '_belongs_to', array());
 
-        $this->_has_one = $this->_has_one + $parent_has_one;
-        $this->_has_many = $this->_has_many + $parent_has_many;
-        $this->_belongs_to = $this->_belongs_to + $parent_belongs_to;
-    }
+      $this->_has_one = $this->_has_one + $parent_has_one;
+      $this->_has_many = $this->_has_many + $parent_has_many;
+      $this->_belongs_to = $this->_belongs_to + $parent_belongs_to;
+      }
+     */
 
     /**
      * 使用 $orm-values() 的欄位名單(第二個參數)，如果有設定黑名單
