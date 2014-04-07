@@ -22,7 +22,7 @@ class Reinforce_ORM extends Kohana_ORM {
     {
         $className = 'Model_' . Inflector::words_to_upper(Inflector::underscore($model));
         $modelClass = new ReflectionClass($className);
-        return  $modelClass->newInstanceArgs(array($id));
+        return $modelClass->newInstanceArgs(array($id));
     }
 
     /*
@@ -48,7 +48,7 @@ class Reinforce_ORM extends Kohana_ORM {
      */
     protected $_guarded = array(); //黑名單欄位
     protected $_fillable = array(); //白名單欄位
-
+   
     /**
      * ======== 原生函式強化 ========
      */
