@@ -48,7 +48,7 @@ class Reinforce_ORM extends Kohana_ORM {
      */
     protected $_guarded = array(); //黑名單欄位
     protected $_fillable = array(); //白名單欄位
-   
+
     /**
      * ======== 原生函式強化 ========
      */
@@ -63,7 +63,7 @@ class Reinforce_ORM extends Kohana_ORM {
         if ($expected === NULL) {
             //若沒有設定白名單，使用 table 預設欄位當白名單
             if (empty($this->_fillable)) {
-                $this->_fillable = array_keys($this->_table_columns);
+                $this->_fillable = array_keys($this->table_columns());
                 //扣除 PK 欄位
                 unset($this->_fillable[$this->_primary_key]);
             }
@@ -435,7 +435,13 @@ class Reinforce_ORM extends Kohana_ORM {
      */
     protected function before_save(Validation $validation = NULL)
     {
-        
+        // 如果欄位類型是 mysql 的 set 或 enum 類型，而且欄位資料是陣列方式儲存
+        // 將自動轉換成以逗號為分隔的字串
+        foreach ($this->_table_columns as $column_name => $column_info) {
+            if (in_array($column_info["data_type"], array("set", "enum")) AND is_array($this->$column_name)) {
+                $this->$column_name = join(',', $this->$column_name);
+            }
+        }
     }
 
     protected function after_save()
