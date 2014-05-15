@@ -8,21 +8,26 @@ class Reinforce_Text extends Kohana_Text {
      * 高亮顯示關鍵字
      *
      * @param type $string
-     * @param type $term
+     * @param type $search 搜尋關鍵字
+     * @param bool $case_insensitive 忽略大小寫
      * @param type $class
      * @return type
      */
-    public static function highlight($string, $term, $class = "highlight")
+    public static function highlight($string, $search, $case_insensitive = FALSE, $class = "highlight")
     {
-        $term = preg_replace('/\s+/', ' ', trim($term));
-        $words = explode(' ', $term);
+        // 先將所有字元用 ' ' 
+        $search = mb_ereg_replace('/\s+/', ' ', trim($search));
+        $words = explode(' ', $search);
 
         $highlighted = array();
         foreach ($words as $word) {
             $highlighted[] = '<span class="' . $class . '">' . $word . '</span>';
         }
-
-        return str_replace($words, $highlighted, $string);
+        if ($case_insensitive) {
+            return str_ireplace($words, $highlighted, $string);
+        } else {
+            return str_replace($words, $highlighted, $string);
+        }
     }
 
     /**
