@@ -25,6 +25,16 @@ class Reinforce_ORM extends Kohana_ORM {
         return $modelClass->newInstanceArgs(array($id));
     }
 
+    /**
+     * Constructs a new model and loads a record if given
+     *
+     * @param   mixed $id Parameter for find or object to load
+     */
+    public function __construct($id = NULL)
+    {
+        parent::__construct($id);
+    }
+
     /*
       public function _initialize()
       {
@@ -70,7 +80,7 @@ class Reinforce_ORM extends Kohana_ORM {
             //將白名單中再扣除黑名單
             $expected = array_diff($this->_fillable, $this->_guarded);
         }
-        parent::values($values, $expected);
+        return parent::values($values, $expected);
     }
 
     /**
