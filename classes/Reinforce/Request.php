@@ -17,11 +17,6 @@ class Reinforce_Request extends Kohana_Request {
     /**
      * @var array    query parameters
      */
-    protected $_patch = array();
-
-    /**
-     * @var array    query parameters
-     */
     protected $_put = array();
 
     /**
@@ -29,7 +24,6 @@ class Reinforce_Request extends Kohana_Request {
      */
     protected $_delete = array();
 
-    
     public static function factory($uri = TRUE, $client_params = array(), $allow_external = TRUE, $injected_routes = array())
     {
         // If this is the initial request
@@ -147,9 +141,6 @@ class Reinforce_Request extends Kohana_Request {
                 case HTTP_Request::DELETE:
                     $request->delete($rest_data);
                     break;
-                case HTTP_Request::PATCH:
-                    $request->delete($rest_data);
-                    break;
             }
 
             // Store global GET and POST data in the initial request only
@@ -239,29 +230,6 @@ class Reinforce_Request extends Kohana_Request {
 
         // Act as a setter, single query string
         $this->_delete[$key] = $value;
-
-        return $this;
-    }
-
-    public function patch($key = NULL, $value = NULL)
-    {
-        if (is_array($key)) {
-            // Act as a setter, replace all query strings
-            $this->_delete = $key;
-
-            return $this;
-        }
-
-        if ($key === NULL) {
-            // Act as a getter, all query strings
-            return $this->_patch;
-        } elseif ($value === NULL) {
-            // Act as a getter, single query string
-            return Arr::path($this->_patch, $key);
-        }
-
-        // Act as a setter, single query string
-        $this->_patch[$key] = $value;
 
         return $this;
     }
