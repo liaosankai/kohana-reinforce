@@ -5,8 +5,7 @@ defined('SYSPATH') OR die('No direct script access.');
 /**
  * @license http://www.opensource.org/licenses/BSD-3-Clause New BSD License
  */
-class Kohana_Event
-{
+class Kohana_Event {
 
     /**
      * Array of events.
