@@ -6,41 +6,109 @@ class Reinforce_Arr extends Kohana_Arr
 {
 
     /**
-     * check is 2D array
+     * 從陣列中挑出符合列舉陣列中的元素
      *
-     * @param   array    array
-     * @return  boolean
+     * @example
+     *
+     *   $arr = array('a', 'b', 'b', 'c', 'd', 'e', 'e', 'f');
+     *   Arr::match_enum($arr, array('a', 'c', 'd')); // 結果 array('a','c','d');
+     *   Arr::match_enum($arr, array('a', 'b', 'c')); // 結果 array('a','b','b','c');
+     *   Arr::match_enum($arr, array('a', 'b', 'e')); // 結果 array('a','b','b','e','e');
+     *   Arr::match_enum($arr, array('a', 'f', 'g')); // 結果 array('a','f');
+     *
+     * @param array $enum_array
+     * @param array $array
+     * @return array
      */
-    public static function is_2d($array)
+    public static function match_enum($array, $enum_array)
     {
-        if (!is_array($array)) {
-            return FALSE;
-        }
-
-        foreach ($array as $val) {
-            if (!is_array($val)) {
-                return FALSE;
-            }
-        }
-        return TRUE;
+        return array_diff($array, array_diff($array, $enum_array));
     }
 
     /**
-     * Rotates a 2D array clockwise.
-     * Example, turns a 2x3 array into a 3x2 array.
+     * 扁平化陣列
      *
-     * @param   array    array to rotate
-     * @param   boolean  keep the keys in the final rotated array. the sub arrays of the source array need to have the same key values.
-     *                   if your subkeys might not match, you need to pass FALSE here!
-     * @return  array
+     * @example
+     *
+     *   $arr = array(
+     *     'Sam' => array(
+     *         'age' => 31,
+     *         'height' => 168,
+     *     )
+     *   );
+     *
+     *   Arr::flatten($arr);
+     *   結果：
+     *   Array
+     *   (
+     *       [Sam.age] => 31
+     *       [Sam.height] => 168
+     *   )
+     *
+     *   Arr::flatten($arr, '#');
+     *   結果：
+     *   (
+     *       [#Sam.age] => 31
+     *       [#Sam.height] => 168
+     *   )
+     *
+     *   Arr::flatten($arr, '#', '_');
+     *   結果：
+     *   Array
+     *   (
+     *       [#Sam_age] => 31
+     *       [#Sam_height] => 168
+     *   )
+     *
+     *
+     * @param array $array
+     * @param string $prefix
+     * @param string $glue
+     * @return array
+     */
+    public static function flatten($array, $prefix = '', $glue = '.')
+    {
+        $result = array();
+        foreach ($array as $key => $value) {
+            if (is_array($value)) {
+                $result = array_merge($result, Arr::flatten($value, $prefix . $key . $glue));
+            } else {
+                $result[$prefix . $key] = $value;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * 翻轉一個二維陣列
+     *
+     * @example
+     *
+     *   $arr = array(
+     *     'id' => array(1,2,3),
+     *     'name' => array('Joe','Bill','Mary'),
+     *     'age' => array(18,33,24),
+     *   );
+     *
+     *   $arr2 = Arr::rotate($arr);
+     *
+     *   結果：
+     *
+     *   array(
+     *     array('id'=> 1, 'name'=> 'Joe', 'age' => 18),
+     *     array('id'=> 2, 'name'=> 'Bill', 'age' => 33),
+     *     array('id'=> 3, 'name'=> 'Mary', 'age' => 24),
+     *   );
+     *
+     *
+     * @param array array to rotate
+     * @param boolean keep the keys in the final rotated array. the sub arrays of the source array need to have the same key values.
+     *                if your subkeys might not match, you need to pass FALSE here!
+     * @return array
      */
     public static function rotate($source_array, $keep_keys = TRUE)
     {
         $new_array = array();
-
-        if (!self::is_2d($source_array)) {
-            return $source_array;
-        };
 
         foreach ($source_array as $key => $value) {
             $value = ($keep_keys === TRUE) ? $value : array_values($value);
@@ -53,10 +121,21 @@ class Reinforce_Arr extends Kohana_Arr
     }
 
     /**
-     * Get a value from the array, and remove it.
+     * 將指定索引的元素從陣列中拉出來(將會將陣列中移除)
+     *
+     * array_pop() 是拉出最後一個，並從陣列中移除
+     * array_shift() 是拉出第一個，並從陣列中移除
+     *
+     * 此函式 Arr::pull() 是拉出指定索引那個，並從陣列中移除
+     *
+     * @example
+     *
+     *   $stack = array("orange", "banana", "apple", "raspberry");
+     *   $fruit = Arr::pull($stack, 1);
+     *   // $stack will be array("orange", "apple", "raspberry");
      *
      * @param array $array
-     * @param string $key
+     * @param string $key 可以是數字或字串索引
      * @return mixed
      */
     public static function pull(array &$array, $key = null)
@@ -67,10 +146,29 @@ class Reinforce_Arr extends Kohana_Arr
     }
 
     /**
-     * Unsets dot-notated key from an array
+     * 使用 `.` 符號索引來刪除深層陣列元素
      *
-     * @param   array   $array    The search array
-     * @param   mixed   $key      The dot-notated key or array of keys
+     * @example
+     *
+     *   $arr = array(
+     *     'Sam' => array(
+     *       'age' => 31,
+     *       'height' => 168,
+     *     ),
+     *     'Tom' => array(
+     *       'age' => 25,
+     *       'height' => 174,
+     *     ),
+     *   );
+     *
+     *   Arr::delete($arr, 'Sam.height');
+     *
+     *   等同於
+     *
+     *   unset($arr['Sam']['height']);
+     *
+     * @param   array $array The search array
+     * @param   mixed $key The dot-notated key or array of keys
      * @return  mixed
      */
     public static function delete(&$array, $key)
@@ -89,7 +187,7 @@ class Reinforce_Arr extends Kohana_Arr
 
         $key_parts = explode('.', $key);
 
-        if (!is_array($array) or ! array_key_exists($key_parts[0], $array)) {
+        if (!is_array($array) or !array_key_exists($key_parts[0], $array)) {
             return false;
         }
 
@@ -106,30 +204,38 @@ class Reinforce_Arr extends Kohana_Arr
     }
 
     /**
-     * The in_arrayi function is a case-insensitive version of in_array.
+     * 強化原生的 in_array()，可以額外給予是否略忽大小寫的參數
      *
-     * @param string  $needle
-     * @param array  $haystack
+     * @param string $needle
+     * @param array $haystack
      * @param boolean $case_insensitive
      * @return boolean
      */
-    public static function in_array($needle, $haystack, $case_insensitive)
+    public static function in_array($needle, $haystack, $strict = FALSE, $case_insensitive = TRUE)
     {
-        return in_array(strtolower($needle), array_map('strtolower', $haystack));
+        $needle = $case_insensitive ? strtolower($needle) : $needle;
+        $haystack = $case_insensitive ? array_map('strtolower', $haystack) : $haystack;
+        return in_array($needle, $haystack, $strict);
     }
 
     /**
-     * The in_arrayi function is a case-insensitive version of in_array.
+     * 一個模擬 php 5.5 才有的 array_column 函式
      *
-     * @param string  $needle
-     * @param array  $haystack
-     * @param boolean $case_insensitive
+     * Return the values from a single column in the input array
+     *
+     * @see http://php.net/manual/en/function.array-column.php
+     * @param array A multi-dimensional array (record set) from which to pull a column of values.
+     * @param mixed The column of values to return. This value may be the integer key of the column
+     *              you wish to retrieve, or it may be the string key name for an associative array.
+     *              It may also be NULL to return complete arrays (useful together with index_key to reindex the array).
+     * @param mixed The column to use as the index/keys for the returned array.
+     *              This value may be the integer key of the column, or it may be the string key name.
      * @return boolean
      */
-    public static function column($input = null, $columnKey = null, $indexKey = null)
+    public static function column($array = null, $column_key = null, $index_key = null)
     {
         if (function_exists('array_column')) {
-            return array_column($input, $columnKey, $indexKey);
+            return array_column($array, $column_key, $index_key);
         }
         // Using func_get_args() in order to check for proper number of
         // parameters and trigger errors exactly as the built-in array_column()
@@ -160,14 +266,14 @@ class Reinforce_Arr extends Kohana_Arr
         }
 
         $paramsInput = $params[0];
-        $paramsColumnKey = ($params[1] !== null) ? (string) $params[1] : null;
+        $paramsColumnKey = ($params[1] !== null) ? (string)$params[1] : null;
 
         $paramsIndexKey = null;
         if (isset($params[2])) {
             if (is_float($params[2]) || is_int($params[2])) {
-                $paramsIndexKey = (int) $params[2];
+                $paramsIndexKey = (int)$params[2];
             } else {
-                $paramsIndexKey = (string) $params[2];
+                $paramsIndexKey = (string)$params[2];
             }
         }
 
@@ -180,7 +286,7 @@ class Reinforce_Arr extends Kohana_Arr
 
             if ($paramsIndexKey !== null && array_key_exists($paramsIndexKey, $row)) {
                 $keySet = true;
-                $key = (string) $row[$paramsIndexKey];
+                $key = (string)$row[$paramsIndexKey];
             }
 
             if ($paramsColumnKey === null) {

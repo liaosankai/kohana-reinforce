@@ -2,10 +2,8 @@
 
 defined('SYSPATH') OR die('No direct script access.');
 
-/**
- * @license http://www.opensource.org/licenses/BSD-3-Clause New BSD License
- */
-class Kohana_Event {
+class Kohana_Event
+{
 
     /**
      * Array of events.
@@ -32,9 +30,9 @@ class Kohana_Event {
      * Adds an event listener to the queue.
      *
      * @access  public
-     * @param   string $name     Event name
+     * @param   string $name Event name
      * @param   string $observer Observer name
-     * @param   Closure $closure  Event handler
+     * @param   Closure $closure Event handler
      */
     public static function register($name, $observer, Closure $closure)
     {
@@ -51,7 +49,7 @@ class Kohana_Event {
      * Returns TRUE if an event listener is registered for the event and FALSE if not.
      *
      * @access  public
-     * @param   string $name  Event name
+     * @param   string $name Event name
      * @return  boolean
      */
     public static function registered($name)
@@ -63,7 +61,7 @@ class Kohana_Event {
      * Clears all event listeners for an event.
      *
      * @access  public
-     * @param   string $name  Event name
+     * @param   string $name Event name
      */
     public static function clear($name)
     {
@@ -74,8 +72,8 @@ class Kohana_Event {
      * Overrides an event.
      *
      * @access  public
-     * @param   string $name     Event name
-     * @param   Closure $closure  Event handler
+     * @param   string $name Event name
+     * @param   Closure $closure Event handler
      */
     public static function override($name, Closure $closure)
     {
@@ -89,8 +87,8 @@ class Kohana_Event {
      * contaning the return values of each event handler.
      *
      * @access  public
-     * @param   string $name    Event name
-     * @param   array $params  (optional) Closure parameters
+     * @param   string $name Event name
+     * @param   array $params (optional) Closure parameters
      * @return  array
      */
     public static function trigger($name, array $params = array())
@@ -111,8 +109,8 @@ class Kohana_Event {
      * of the first event handler.
      *
      * @access  public
-     * @param   string $name    Event name
-     * @param   array $params  (optional) Closure parameters
+     * @param   string $name Event name
+     * @param   array $params (optional) Closure parameters
      * @return  mixed
      */
     public static function first($name, array $params = array())

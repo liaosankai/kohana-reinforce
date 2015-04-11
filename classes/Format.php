@@ -2,7 +2,7 @@
 
 defined('SYSPATH') OR die('No direct script access.');
 
-class Inflector extends Reinforce_Inflector
+class Format extends Kohana_Format
 {
     
 }

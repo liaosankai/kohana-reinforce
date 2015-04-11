@@ -1,6 +1,6 @@
 <?php
 
-defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') OR die('No direct script access.');
 
 /**
  * PDO_SQLite database connection.
@@ -18,7 +18,7 @@ class Database_PDO_SQLite extends Kohana_Database_PDO
 
     public function set_charset($charset)
     {
-
+        
     }
 
     public function list_tables($like = NULL)

@@ -1,7 +1,8 @@
 <?php
 
-defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') OR die('No direct script access.');
 
-class Markdown extends Kohana_Markdown {
-
+class Markdown extends Kohana_Markdown
+{
+    
 }

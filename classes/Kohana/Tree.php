@@ -1,21 +1,27 @@
 <?php
 
-defined('SYSPATH') or die('No direct script access.');
+defined('SYSPATH') OR die('No direct script access.');
 
-class Kohana_Tree {
+class Kohana_Tree
+{
 
     /**
      * 將一個透過 Tree::build() 節點樹扁平化
      *
      * @param array $tree 一個透過 Tree::build() 建立的樹陣列
+     * @param boolean 將 id 當成扁平陣列的 key 值
      * @param array $flat 用來收集節點的陣列
      * @return array
      */
-    public static function flat(array $tree, &$flat = array())
+    public static function flat(array $tree, $id_as_key = FALSE, &$flat = array())
     {
         foreach ($tree as $node) {
-            $flat[] = $node;
-            self::flat($node["children"], $flat);
+            if ($id_as_key) {
+                $flat[$node['id']] = $node;
+            } else {
+                $flat[] = $node;
+            }
+            self::flat($node["children"], $id_as_key, $flat);
         }
         return $flat;
     }
@@ -68,7 +74,7 @@ class Kohana_Tree {
             if ($node["parent_id"] == $parent_id) {
                 $children = self::build($elements, $node["id"], $node["level"], $node["name"], $node["ancestor_name"]);
                 if ($children) {
-                    usort($children, function($a, $b) {
+                    usort($children, function ($a, $b) {
                         return $a["rank"] - $b["rank"];
                     });
                     $node['children'] = $children;
