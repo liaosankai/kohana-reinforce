@@ -78,7 +78,48 @@ class Reinforce_Arr extends Kohana_Arr
         }
         return $result;
     }
+    
+	/**
+	 * 反解被扁平化的陣列
+	 *
+	 * @param array $array  flattened array
+	 * @param string $glue   glue used in flattening
+	 * @return array
+	 */
+	public static function reverse_flatten($array, $glue = '.')
+	{
+		$return = array();
 
+		foreach ($array as $key => $value)
+		{
+			if (stripos($key, $glue) !== false)
+			{
+				$keys = explode($glue, $key);
+				$temp =& $return;
+				while (count($keys) > 1)
+				{
+					$key = array_shift($keys);
+					$key = is_numeric($key) ? (int) $key : $key;
+					if ( ! isset($temp[$key]) or ! is_array($temp[$key]))
+					{
+						$temp[$key] = array();
+					}
+					$temp =& $temp[$key];
+				}
+
+				$key = array_shift($keys);
+				$key = is_numeric($key) ? (int) $key : $key;
+				$temp[$key] = $value;
+			}
+			else
+			{
+				$key = is_numeric($key) ? (int) $key : $key;
+				$return[$key] = $value;
+			}
+		}
+
+		return $return;
+	}
     /**
      * 翻轉一個二維陣列
      *
