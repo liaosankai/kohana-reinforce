@@ -182,7 +182,7 @@ class Reinforce_Text extends Kohana_Text
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_strtolower') ? mb_strtolower(mb_substr($str, 0, 1, $encoding), $encoding) .
-            mb_substr($str, 1, mb_strlen($str, $encoding), $encoding) : lcfirst($str);
+                mb_substr($str, 1, mb_strlen($str, $encoding), $encoding) : lcfirst($str);
     }
 
     /**
@@ -199,7 +199,7 @@ class Reinforce_Text extends Kohana_Text
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_strtoupper') ? mb_strtoupper(mb_substr($str, 0, 1, $encoding), $encoding) .
-            mb_substr($str, 1, mb_strlen($str, $encoding), $encoding) : ucfirst($str);
+                mb_substr($str, 1, mb_strlen($str, $encoding), $encoding) : ucfirst($str);
     }
 
     /**
@@ -219,6 +219,39 @@ class Reinforce_Text extends Kohana_Text
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_convert_case') ? mb_convert_case($str, MB_CASE_TITLE, $encoding) : ucwords(strtolower($str));
+    }
+
+    /**
+     * 移除字串中的 HTML 標籤
+     *
+     * @param string $text 帶有 HTML 標籤的字串
+     * @param string $tags 准許存在的標籤(意思就是不移除)
+     * @param boolean $remove_content 是否同時移除標籤裡面的內容
+     * @param boolean $no_spaces_eol 將多空白變成一個空白，並移除換行符號
+     * @return string 移除 HTML 後的字串
+     */
+    public static function strip_tags($text, $tags, $remove_content = FALSE, $no_spaces_eol = FALSE)
+    {
+        if ($no_spaces_eol) {
+            $string = trim($string);
+            $string = preg_replace('/\s+/', ' ', $string); // 多個空白變成一個空白
+            $string = str_replace("\r", '', $string);    // --- 將 \r 取代成一個空字串
+            $string = str_replace("\n", ' ', $string);   // --- 將 \n 取代成一個空白
+            $string = str_replace("\t", ' ', $string);   // --- 將 \t 取代成一個空白
+        }
+
+        if ($remove_content) {
+            preg_match_all('/<(.+?)[\s]*\/?[\s]*>/si', trim($tags), $tags);
+            $tags = array_unique($tags[1]);
+            if (is_array($tags) AND count($tags) > 0) {
+                return preg_replace('@<(?!(?:' . implode('|', $tags) . ')\b)(\w+)\b.*?>.*?</\1>@si', '', $text);
+            } else {
+                return preg_replace('@<(\w+)\b.*?>.*?</\1>@si', '', $text);
+            }
+            return $text;
+        } else {
+            return strip_tags($text, $tags);
+        }
     }
 
 }
