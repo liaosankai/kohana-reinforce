@@ -651,12 +651,18 @@ class Reinforce_ORM extends Kohana_ORM
      */
     protected function before_save(Validation $validation = NULL)
     {
-        // ※ 注意此欄位不能被設定在
-        // 如果欄位類型是 mysql 的 set 或 enum 類型，而且欄位資料是陣列方式儲存
-        // 將自動轉換成以逗號為分隔的字串
-        // ※ 注意此類型欄位不能被設定在 $_serialize_columns 中，會出錯
+        // 如果欄位資料
+        //
+        // 1) 欄位類型是 mysql 的 set 或 enum 類型，
+        // 2) 欄位資料是陣列方
+        // 3) 不存在 $_serialize_columns 陣列中
+        //
+        // 就自動轉換成以逗號為分隔的字串
         foreach ($this->_table_columns as $column_name => $column_info) {
-            if (in_array($column_info["data_type"], array("set", "enum")) AND is_array($this->$column_name)) {
+            $is_set_or_enum = in_array($column_info["data_type"], array("set", "enum"));
+            $is_array = is_array($this->$column_name);
+            $is_not_in_serialize_columns = !array_key_exists($column_name, $this->_serialize_columns);
+            if ($is_set_or_enum AND $is_array AND $is_not_in_serialize_columns) {
                 $this->$column_name = join(',', $this->$column_name);
             }
         }
