@@ -551,6 +551,20 @@ class Reinforce_ORM extends Kohana_ORM
     }
 
     /**
+     * Count the number of records in the table.
+     *
+     * @return integer
+     */
+    public function count_all() {
+        $this->before_count_all();
+        Event::trigger('model.count_all.before', array($this));
+        $records = parent::count_all();
+        $this->after_count_all($records);
+        Event::trigger('model.count_all.after', array($records, $this));
+        return $records;
+    }
+
+    /**
      * Deletes a single record while ignoring relationships.
      *
      * @chainable
@@ -560,8 +574,10 @@ class Reinforce_ORM extends Kohana_ORM
     public function delete()
     {
         $this->before_delete();
+        Event::trigger('model.delete.before', array($this));
         $result = parent::delete();
         $this->after_delete();
+        Event::trigger('model.delete.after', array($this));
         return $result;
     }
 
@@ -720,6 +736,14 @@ class Reinforce_ORM extends Kohana_ORM
 
     protected function after_find_all(Database_Result $result)
     {
+
+    }
+
+    protected function before_count_all() {
+
+    }
+
+    protected function after_count_all($records) {
 
     }
 
