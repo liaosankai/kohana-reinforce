@@ -12,8 +12,7 @@ defined('SYSPATH') OR die('No direct script access.');
  * @copyright  (c) 2008-2012 Kohana Team
  * @license    http://kohanaframework.org/license
  */
-class Reinforce_Request extends Kohana_Request
-{
+class Reinforce_Request extends Kohana_Request {
 
     /**
      * @var array query parameters
@@ -28,8 +27,7 @@ class Reinforce_Request extends Kohana_Request
     /**
      * 重寫 factory ，會順便處理 $_PUT 和 $_DELETE 的資料
      */
-    public static function factory($uri = TRUE, $client_params = array(), $allow_external = TRUE, $injected_routes = array())
-    {
+    public static function factory($uri = TRUE, $client_params = array(), $allow_external = TRUE, $injected_routes = array()) {
         // If this is the initial request
         if (!Request::$initial) {
             $protocol = HTTP::$protocol;
@@ -38,9 +36,9 @@ class Reinforce_Request extends Kohana_Request
             $method = getenv('REQUEST_METHOD') ? getenv('REQUEST_METHOD') : HTTP_Request::GET;
 
             if ((!getenv('HTTPS') AND filter_var(getenv('HTTPS'), FILTER_VALIDATE_BOOLEAN))
-                OR (getenv('HTTP_X_FORWARDED_PROTO')
+                    OR ( getenv('HTTP_X_FORWARDED_PROTO')
                     AND getenv('HTTP_X_FORWARDED_PROTO') === 'https')
-                AND in_array(getenv('REMOTE_ADDR'), Request::$trusted_proxies)
+                    AND in_array(getenv('REMOTE_ADDR'), Request::$trusted_proxies)
             ) {
                 // This request is secure
                 $secure = TRUE;
@@ -64,8 +62,8 @@ class Reinforce_Request extends Kohana_Request
 
                 unset($client_ips);
             } else if (getenv('HTTP_CLIENT_IP')
-                AND getenv('REMOTE_ADDR')
-                AND in_array(getenv('REMOTE_ADDR'), Request::$trusted_proxies)
+                    AND getenv('REMOTE_ADDR')
+                    AND in_array(getenv('REMOTE_ADDR'), Request::$trusted_proxies)
             ) {
                 // Use the forwarded IP address, typically set when the
                 // client is using a proxy server.
@@ -134,8 +132,8 @@ class Reinforce_Request extends Kohana_Request
 
             // Store global GET and POST data in the initial request only
             $request->protocol($protocol)
-                ->query($_GET)
-                ->post($_POST);
+                    ->query($_GET)
+                    ->post($_POST);
 
             if (isset($secure)) {
                 // Set the request security
@@ -173,6 +171,18 @@ class Reinforce_Request extends Kohana_Request
     }
 
     /**
+     * 取得 GET 或 POST 或 PUT 或 DELTE 中的變數
+     * @param type $key
+     * @param type $value
+     */
+    public static function input($key, $default_value = '') {
+        $initial = Request::initial();
+        $method = $initial->method();
+        $data = $initial->$method();
+        return Arr::path($data, $key, $default_value);
+    }
+
+    /**
      * ※ 如果 method 是 GET 或 DELTE ，會自動將 $this->put 或 $this->_delete 配至 body 中
      *
      * Processes the request, executing the controller action that handles this
@@ -195,8 +205,7 @@ class Reinforce_Request extends Kohana_Request
      * @uses    [Kohana::$profiling]
      * @uses    [Profiler]
      */
-    public function execute()
-    {
+    public function execute() {
 
         //
         if ($this->_method == Request::PUT && is_array($this->_put) && count($this->_put)) {
@@ -227,9 +236,7 @@ class Reinforce_Request extends Kohana_Request
                 $this->_controller = $params['controller'];
 
                 // Store the action
-                $this->_action = (isset($params['action']))
-                    ? $params['action']
-                    : Route::$default_action;
+                $this->_action = (isset($params['action'])) ? $params['action'] : Route::$default_action;
 
                 // These are accessible as public vars and can be overloaded
                 unset($params['controller'], $params['action'], $params['directory']);
@@ -241,14 +248,14 @@ class Reinforce_Request extends Kohana_Request
 
         if (!$this->_route instanceof Route) {
             return HTTP_Exception::factory(404, 'Unable to find a route to match the URI: :uri', array(
-                ':uri' => $this->_uri,
-            ))->request($this)
-                ->get_response();
+                                ':uri' => $this->_uri,
+                            ))->request($this)
+                            ->get_response();
         }
 
         if (!$this->_client instanceof Request_Client) {
             throw new Request_Exception('Unable to execute :uri without a Kohana_Request_Client', array(
-                ':uri' => $this->_uri,
+        ':uri' => $this->_uri,
             ));
         }
 
@@ -258,16 +265,14 @@ class Reinforce_Request extends Kohana_Request
     /**
      * 新增 get() 來當 query() 的別名
      */
-    public function get($key = NULL, $value = NULL)
-    {
+    public function get($key = NULL, $value = NULL) {
         return $this->query($key, $value);
     }
 
     /**
      * 取得/設定 PUT 的資料
      */
-    public function put($key = NULL, $value = NULL)
-    {
+    public function put($key = NULL, $value = NULL) {
         if (is_array($key)) {
             // Act as a setter, replace all query strings
             $this->_put = $key;
@@ -291,8 +296,7 @@ class Reinforce_Request extends Kohana_Request
     /**
      * 取得/設定 DELETE 資料
      */
-    public function delete($key = NULL, $value = NULL)
-    {
+    public function delete($key = NULL, $value = NULL) {
         if (is_array($key)) {
             $this->_delete = $key;
             return $this;
