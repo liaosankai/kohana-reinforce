@@ -2,8 +2,7 @@
 
 defined("SYSPATH") or die("No direct script access.");
 
-abstract class Kohana_Controller_Api_Resource extends Controller_Rest
-{
+abstract class Kohana_Controller_Api_Resource extends Controller_Rest {
 
     /**
      * @var string 資料模型名稱
@@ -63,8 +62,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
     /**
      * 前置函式
      */
-    public function before()
-    {
+    public function before() {
         parent::before();
 
         // 取得 REST 資料群
@@ -90,8 +88,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
      * @param int $id 資源識別碼
      * @return array json
      */
-    public function get_read()
-    {
+    public function get_read() {
         // 取得欲讀取的資源識別碼
         $id = Arr::get($this->_get, "id", Arr::get($this->_param, "id"));
         $skip = Arr::get($this->_get, "skip", Arr::get($this->_get, 'start'));
@@ -167,8 +164,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
      *
      * @return array
      */
-    public function post_create()
-    {
+    public function post_create() {
         unset($this->_post['id']);
         try {
             $this->before_create();
@@ -193,8 +189,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
      * @param int $id 資源識別碼
      * @return array json
      */
-    public function put_update()
-    {
+    public function put_update() {
         // 取得欲更新的資源識別碼
         $id = Arr::get($this->_put, "id", Arr::get($this->_get, "id", Arr::get($this->_param, "id")));
 
@@ -227,8 +222,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
      * @param int $id 資源識別碼
      * @return array json
      */
-    public function delete_delete()
-    {
+    public function delete_delete() {
         // 取得欲刪除的資源識別碼
         $id = Arr::get($this->_delete, "id", Arr::get($this->_get, "id", Arr::get($this->_param, "id")));
 
@@ -239,9 +233,11 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
             foreach ($ids as $id) {
                 $this->_model->clear();
                 $this->_model->where("{$this->_model->object_name()}.id", "=", $id)->find();
-                $this->before_delete();
-                $this->_model->delete();
-                $this->after_delete($id);
+                if ($this->_model->loaded()) {
+                    $this->before_delete();
+                    $this->_model->delete();
+                    $this->after_delete($id);
+                }
             }
         }
         $this->http_status = 204;
@@ -272,8 +268,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
      * @param string $id 資源識別碼
      * @return array json
      */
-    public function delete_destroy()
-    {
+    public function delete_destroy() {
         // 取得欲刪除的資源識別碼
         $id = Arr::get($this->_delete, "id", Arr::get($this->_get, "id", Arr::get($this->_param, "id")));
 
@@ -310,8 +305,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
     /**
      * 400 錯誤請求 - 通常發生在資料新增(POST)、更新(PUT)時，所輸入欄位資料不正確(驗證失敗)，或傳送的參數格式、類型不正確。
      */
-    protected function _error_400($exc = NULL)
-    {
+    protected function _error_400($exc = NULL) {
         $this->http_status = 400;
         // 取得欄位資料無效的錯誤訊息
         $field_errors = array();
@@ -329,8 +323,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
     /**
      * 404 資料不存在 - 不正確的URL，或是欲查詢(GET)、更新(PUT)、刪除(DELETE)的資料識別碼(ID)不存在。
      */
-    protected function _error_404($id = NULL)
-    {
+    protected function _error_404($id = NULL) {
         $this->http_status = 404;
         return array(
             "error" => array(
@@ -342,8 +335,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
     /**
      * 500 伺服器錯誤 - 伺服器端發生了未知的狀況或錯誤。
      */
-    protected function _error_500($exc)
-    {
+    protected function _error_500($exc) {
         $this->http_status = 500;
         return array(
             "error" => array(
@@ -355,43 +347,36 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
     // #########################################################################
     //     別名函式
     // #########################################################################
-    public function get_index()
-    {
+    public function get_index() {
         return $this->get_read();
     }
 
-    public function post_index()
-    {
+    public function post_index() {
         return $this->post_create();
     }
 
-    public function put_index()
-    {
+    public function put_index() {
         return $this->put_update();
     }
 
-    public function delete_index()
-    {
+    public function delete_index() {
         return $this->delete_delete();
     }
 
     // #########################################################################
     //     事件函式 (這些函式應該依需求被覆寫)
     // #########################################################################
-    protected function before_find()
-    {
+    protected function before_find() {
 
     }
 
-    protected function after_find()
-    {
+    protected function after_find() {
         $this->_responses["DT_RowId"] = "row_{$this->_model->id}";
         $this->_responses["DT_RowClass"] = "";
         $this->_responses["DT_RowData"] = array();
     }
 
-    protected function before_find_all()
-    {
+    protected function before_find_all() {
         // 欄位資訊
         $table_columns = $this->_model->table_columns();
         // 過濾的條件
@@ -463,8 +448,7 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
         }
     }
 
-    protected function after_find_all(Database_Result $result)
-    {
+    protected function after_find_all(Database_Result $result) {
         // 為了支援 datatable.js 所追加的屬性
         $this->_responses['draw'] = Arr::get($this->_get, "draw", 0);
         foreach ($result as $key => $row) {
@@ -478,23 +462,19 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
         }
     }
 
-    protected function before_save()
-    {
+    protected function before_save() {
 
     }
 
-    protected function after_save()
-    {
+    protected function after_save() {
 
     }
 
-    protected function before_create()
-    {
+    protected function before_create() {
 
     }
 
-    protected function after_create()
-    {
+    protected function after_create() {
         /**
          * 處理非 through 類型的 has_many
          */
@@ -583,13 +563,11 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
         }
     }
 
-    protected function before_update()
-    {
+    protected function before_update() {
 
     }
 
-    protected function after_update()
-    {
+    protected function after_update() {
         /**
          * 處理非 through 類型的 has_many
          */
@@ -682,13 +660,11 @@ abstract class Kohana_Controller_Api_Resource extends Controller_Rest
         }
     }
 
-    protected function before_delete()
-    {
+    protected function before_delete() {
 
     }
 
-    protected function after_delete($id = NULL)
-    {
+    protected function after_delete($id = NULL) {
 
     }
 
