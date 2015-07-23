@@ -4,7 +4,25 @@ defined('SYSPATH') OR die('No direct script access.');
 
 class Reinforce_Arr extends Kohana_Arr
 {
+    /**
+     * check is 2D array
+     *
+     * @param array array
+     * @return boolean
+     */
+    public static function is_2d($array)
+    {
+        if (!is_array($array)) {
+            return FALSE;
+        }
 
+        foreach ($array as $val) {
+            if (!is_array($val)) {
+                return FALSE;
+            }
+        }
+        return TRUE;
+    }
     /**
      * 從陣列中挑出符合列舉陣列中的元素
      *
