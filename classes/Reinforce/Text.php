@@ -2,8 +2,17 @@
 
 defined('SYSPATH') OR die('No direct script access.');
 
-class Reinforce_Text extends Kohana_Text
-{
+class Reinforce_Text extends Kohana_Text {
+
+    static public function starts_with($haystack, $needle) {
+        // search backwards starting from haystack length characters from the end
+        return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
+    }
+
+    static public function ends_with($haystack, $needle) {
+        // search forward starting from end minus needle length characters
+        return $needle === "" || (($temp = strlen($haystack) - strlen($needle)) >= 0 && strpos($haystack, $needle, $temp) !== FALSE);
+    }
 
     /**
      * ※ 修正捕捉 IE11 錯誤的問的
@@ -24,8 +33,7 @@ class Reinforce_Text extends Kohana_Text
      * @return  mixed   requested information, FALSE if nothing is found
      * @uses    Kohana::$config
      */
-    public static function user_agent($agent, $value)
-    {
+    public static function user_agent($agent, $value) {
         if (is_array($value)) {
             $data = array();
             foreach ($value as $part) {
@@ -90,8 +98,7 @@ class Reinforce_Text extends Kohana_Text
      * @param type $class
      * @return type
      */
-    public static function highlight($string, $search, $case_insensitive = FALSE, $class = "highlight")
-    {
+    public static function highlight($string, $search, $case_insensitive = FALSE, $class = "highlight") {
         // 先將所有字元用 ' '
         $search = mb_ereg_replace('/\s+/', ' ', trim($search));
         $words = explode(' ', $search);
@@ -116,8 +123,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return  string
      */
-    public static function sub($str, $start, $length = null, $encoding = null)
-    {
+    public static function sub($str, $start, $length = null, $encoding = null) {
         $encoding or $encoding = \Kohana::$charset;
 
         // substr functions don't parse null correctly
@@ -133,8 +139,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return  int
      */
-    public static function length($str, $encoding = null)
-    {
+    public static function length($str, $encoding = null) {
         $encoding or $encoding = \Kohana::$charset;
 
         return function_exists('mb_strlen') ? mb_strlen($str, $encoding) : strlen($str);
@@ -147,8 +152,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return  string
      */
-    public static function lower($str, $encoding = null)
-    {
+    public static function lower($str, $encoding = null) {
         $encoding or $encoding = \Kohana::$charset;
 
         return function_exists('mb_strtolower') ? mb_strtolower($str, $encoding) : strtolower($str);
@@ -161,8 +165,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return  string
      */
-    public static function upper($str, $encoding = null)
-    {
+    public static function upper($str, $encoding = null) {
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_strtoupper') ? mb_strtoupper($str, $encoding) : strtoupper($str);
@@ -177,8 +180,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return  string
      */
-    public static function lcfirst($str, $encoding = null)
-    {
+    public static function lcfirst($str, $encoding = null) {
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_strtolower') ? mb_strtolower(mb_substr($str, 0, 1, $encoding), $encoding) .
@@ -194,8 +196,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return   string
      */
-    public static function ucfirst($str, $encoding = null)
-    {
+    public static function ucfirst($str, $encoding = null) {
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_strtoupper') ? mb_strtoupper(mb_substr($str, 0, 1, $encoding), $encoding) .
@@ -214,8 +215,7 @@ class Reinforce_Text extends Kohana_Text
      * @param   string $encoding default UTF-8
      * @return  string
      */
-    public static function ucwords($str, $encoding = null)
-    {
+    public static function ucwords($str, $encoding = null) {
         $encoding or $encoding = Kohana::$charset;
 
         return function_exists('mb_convert_case') ? mb_convert_case($str, MB_CASE_TITLE, $encoding) : ucwords(strtolower($str));
@@ -230,8 +230,7 @@ class Reinforce_Text extends Kohana_Text
      * @param boolean $no_spaces_eol 將多空白變成一個空白，並移除換行符號
      * @return string 移除 HTML 後的字串
      */
-    public static function strip_tags($text, $tags, $remove_content = FALSE, $no_spaces_eol = FALSE)
-    {
+    public static function strip_tags($text, $tags, $remove_content = FALSE, $no_spaces_eol = FALSE) {
         if ($no_spaces_eol) {
             $string = trim($string);
             $string = preg_replace('/\s+/', ' ', $string); // 多個空白變成一個空白
