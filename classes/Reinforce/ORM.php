@@ -2,8 +2,7 @@
 
 defined('SYSPATH') OR die('No direct script access.');
 
-class Reinforce_ORM extends Kohana_ORM
-{
+class Reinforce_ORM extends Kohana_ORM {
 
     //
     protected $_pivot_relaction;
@@ -25,8 +24,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param   mixed $id Parameter for find()
      * @return  ORM
      */
-    public static function factory($model, $id = NULL, $pivot_relaction = array())
-    {
+    public static function factory($model, $id = NULL, $pivot_relaction = array()) {
         $className = 'Model_' . Inflector::words_to_upper(Inflector::underscore($model));
         $modelClass = new ReflectionClass($className);
         return $modelClass->newInstanceArgs(array($id, $pivot_relaction));
@@ -38,8 +36,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  mixed $id Parameter for find or object to load
      * @param  mixed $id Parameter for find or object to load
      */
-    public function __construct($id = NULL, $pivot_relaction = NULL)
-    {
+    public function __construct($id = NULL, $pivot_relaction = NULL) {
         $this->_pivot_relaction = $pivot_relaction;
         parent::__construct($id);
     }
@@ -67,8 +64,7 @@ class Reinforce_ORM extends Kohana_ORM
      * 取得資料表單前綴詞
      * @return string
      */
-    public function table_prefix()
-    {
+    public function table_prefix() {
         return $this->_db->table_prefix();
     }
 
@@ -77,8 +73,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param array $values
      * @param array $expected
      */
-    public function values(array $values, array $expected = NULL)
-    {
+    public function values(array $values, array $expected = NULL) {
         if ($expected === NULL) {
             //若沒有設定白名單，使用 table 預設欄位當白名單
             if (empty($this->_fillable)) {
@@ -108,8 +103,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  mixed $far_keys Related model, primary key, or an array of primary keys
      * @return ORM
      */
-    public function remove($alias, $far_keys = NULL)
-    {
+    public function remove($alias, $far_keys = NULL) {
         $far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
 
         if (isset($this->_has_many[$alias]['through'])) {
@@ -119,10 +113,10 @@ class Reinforce_ORM extends Kohana_ORM
         }
 
         $query = DB::delete($table)
-            ->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
+                ->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
 
         if ($far_keys !== NULL) {
-            $far_keys = (array)$far_keys;
+            $far_keys = (array) $far_keys;
             if (!empty($far_keys)) {
                 // Remove all the relationships in the array
                 $query->where($this->_has_many[$alias]['far_key'], 'IN', $far_keys);
@@ -143,13 +137,12 @@ class Reinforce_ORM extends Kohana_ORM
      *
      * @return void
      */
-    protected function _validation()
-    {
+    protected function _validation() {
         // Build the validation object with its rules
         $this->_validation = Validation::factory($this->_object)
-            ->bind(':model', $this)
-            ->bind(':original_values', $this->_original_values)
-            ->bind(':changed', $this->_changed);
+                ->bind(':model', $this)
+                ->bind(':original_values', $this->_original_values)
+                ->bind(':changed', $this->_changed);
 
         $rules = is_array($this->rules()) ? $this->rules() : array();
         foreach ($rules as $field => $rules) {
@@ -186,17 +179,16 @@ class Reinforce_ORM extends Kohana_ORM
      *
      * @param bool as_object 轉為純物件
      */
-    public function pivot()
-    {
+    public function pivot() {
         extract($this->_pivot_relaction);
 
         $pivot = DB::select()
-            ->from($through)
-            ->where($far_key, '=', $this->id)
-            ->and_where($foreign_key, '=', $foreign_key_id)
-            ->as_object()
-            ->execute()
-            ->current();
+                ->from($through)
+                ->where($far_key, '=', $this->id)
+                ->and_where($foreign_key, '=', $foreign_key_id)
+                ->as_object()
+                ->execute()
+                ->current();
 
         return $pivot;
     }
@@ -209,8 +201,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  bool $multiple Return an iterator or load a single row
      * @return ORM|Database_Result
      */
-    protected function _load_result($multiple = FALSE)
-    {
+    protected function _load_result($multiple = FALSE) {
         $this->_db_builder->from(array($this->_table_name, $this->_object_name));
 
         if ($multiple === FALSE) {
@@ -221,7 +212,7 @@ class Reinforce_ORM extends Kohana_ORM
         // Select all columns by default
         $this->_db_builder->select_array($this->_build_select());
 
-        if (!isset($this->_db_applied['order_by']) AND !empty($this->_sorting)) {
+        if (!isset($this->_db_applied['order_by']) AND ! empty($this->_sorting)) {
             foreach ($this->_sorting as $column => $direction) {
                 if (strpos($column, '.') === FALSE) {
                     // Sorting column for use in JOINs
@@ -270,11 +261,10 @@ class Reinforce_ORM extends Kohana_ORM
      * @throws Kohana_Exception
      * @return mixed
      */
-    public function get($column)
-    {
+    public function get($column) {
         if (array_key_exists($column, $this->_object)) {
             return (in_array($column, $this->_serialize_columns)) ?
-                $this->_unserialize_value($this->_object[$column]) : $this->_object[$column];
+                    $this->_unserialize_value($this->_object[$column]) : $this->_object[$column];
         } else if (isset($this->_related[$column])) {
             // Return related model that has already been fetched
             return $this->_related[$column];
@@ -353,8 +343,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  mixed $far_keys Related model, primary key, or an array of primary keys
      * @return ORM
      */
-    public function remove_except($alias, $far_keys = NULL)
-    {
+    public function remove_except($alias, $far_keys = NULL) {
         $far_keys = ($far_keys instanceof ORM) ? $far_keys->pk() : $far_keys;
 
         if (isset($this->_has_many[$alias]['through'])) {
@@ -363,10 +352,10 @@ class Reinforce_ORM extends Kohana_ORM
             $table = $this->_has_many[$alias]['table'];
         }
         $query = DB::delete($table)
-            ->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
+                ->where($this->_has_many[$alias]['foreign_key'], '=', $this->pk());
 
         if ($far_keys !== NULL) {
-            $far_keys = (array)$far_keys;
+            $far_keys = (array) $far_keys;
             if (!empty($far_keys)) {
                 // Remove all the relationships in the array
                 $query->where($this->_has_many[$alias]['far_key'], 'NOT IN', $far_keys);
@@ -380,26 +369,22 @@ class Reinforce_ORM extends Kohana_ORM
         return $this;
     }
 
-    public function where_null($column)
-    {
+    public function where_null($column) {
         $this->where($column, "IS", DB::expr('NULL'));
         return $this;
     }
 
-    public function where_not_null($column)
-    {
+    public function where_not_null($column) {
         $this->where($column, "IS NOT", DB::expr('NULL'));
         return $this;
     }
 
-    public function where_in($column, array $values)
-    {
+    public function where_in($column, array $values) {
         $this->where($column, "IN", $values);
         return $this;
     }
 
-    public function where_not_in($column, array $values)
-    {
+    public function where_not_in($column, array $values) {
         $this->where($column, "NOT IN", $values);
         return $this;
     }
@@ -409,8 +394,7 @@ class Reinforce_ORM extends Kohana_ORM
      *
      * @return array
      */
-    public function list_columns()
-    {
+    public function list_columns() {
         $cache_id = 'orm_' . $this->_table_name;
         $cached = Kohana::cache($cache_id);
         if ($cached) {
@@ -431,8 +415,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param String $delimiter 範圍的分隔符號
      * @return \Reinforce_ORM
      */
-    public function where_range($column, $range = null, $delimiter = '~')
-    {
+    public function where_range($column, $range = null, $delimiter = '~') {
         $between = explode($delimiter, $range);
 
         if (count($between) == 2) {
@@ -442,7 +425,7 @@ class Reinforce_ORM extends Kohana_ORM
             if (($start == '' or $start == '*') and $end != '') {
                 //range: "* ~ 10"
                 $this->where($column, '<=', $end);
-            } else if ($start != '' and ($end == '' or $end == '*')) {
+            } else if ($start != '' and ( $end == '' or $end == '*')) {
                 //range: "1 ~ *"
                 $this->where($column, '>=', $start);
             } else {
@@ -460,8 +443,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  int $amount
      * @return int
      */
-    public function increment($column, $amount = 1)
-    {
+    public function increment($column, $amount = 1) {
         return $this->adjust($column, $amount, ' + ');
     }
 
@@ -472,8 +454,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  int $amount
      * @return int
      */
-    public function decrement($column, $amount = 1)
-    {
+    public function decrement($column, $amount = 1) {
         return $this->adjust($column, $amount, ' - ');
     }
 
@@ -485,8 +466,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  string $operator
      * @return int
      */
-    protected function adjust($column, $amount, $operator)
-    {
+    protected function adjust($column, $amount, $operator) {
         $wrapped = $this->_db->escape($column);
 
         // To make the adjustment to the column, we'll wrap the expression in an
@@ -496,18 +476,35 @@ class Reinforce_ORM extends Kohana_ORM
 
         // Update a single record
         return DB::update($this->_table_name)
-            ->set(array($column => $value))
-            ->where($this->_primary_key, '=', $this->pk())
-            ->execute($this->_db);
+                        ->set(array($column => $value))
+                        ->where($this->_primary_key, '=', $this->pk())
+                        ->execute($this->_db);
     }
 
     /**
      * 追加對 $direction 的檢查
      */
-    public function order_by($column, $direction = NULL)
-    {
+    public function order_by($column, $direction = NULL) {
         $direction = in_array(strtolower($direction), array('desc', 'asc')) ? $direction : 'asc';
         return parent::order_by($column, $direction);
+    }
+
+    /**
+     * 追加可以使用字串表達法來設定 order_by
+     */
+    public function sort_by($sort) {
+        $sorts = explode(",", $sort);
+        if (is_array($sorts) AND count($sorts)) {
+            foreach ($sorts as $sort) {
+                // 排序方向
+                $direction = strpos($sort, "-") === FALSE ? "asc" : "desc";
+                // 欄位名稱
+                $column = trim(trim($sort, "-"));
+                //
+                $this->order_by($column, $direction);
+            }
+        }
+        return $this;
     }
 
     /**
@@ -524,8 +521,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @throws Kohana_Exception
      * @return ORM
      */
-    public function find()
-    {
+    public function find() {
         $this->before_find();
         Event::trigger('model.find.before', array($this));
         $result = parent::find();
@@ -540,8 +536,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @throws Kohana_Exception
      * @return Database_Result
      */
-    public function find_all()
-    {
+    public function find_all() {
         $this->before_find_all();
         Event::trigger('model.find_all.before', array($this));
         $result = parent::find_all();
@@ -571,8 +566,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @throws Kohana_Exception
      * @return ORM
      */
-    public function delete()
-    {
+    public function delete() {
         $this->before_delete();
         Event::trigger('model.delete.before', array($this));
         $result = parent::delete();
@@ -588,8 +582,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @param  Validation $validation Validation object
      * @return ORM
      */
-    public function save(Validation $validation = NULL)
-    {
+    public function save(Validation $validation = NULL) {
         $this->before_save($validation);
         Event::trigger('model.save.before', array($this, $validation));
         $result = parent::save($validation);
@@ -604,8 +597,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @throws Kohana_Exception
      * @return ORM
      */
-    public function create(Validation $validation = NULL)
-    {
+    public function create(Validation $validation = NULL) {
         $this->before_create($validation);
         Event::trigger('model.create.before', array($this, $validation));
 
@@ -640,8 +632,7 @@ class Reinforce_ORM extends Kohana_ORM
      * @throws Kohana_Exception
      * @return ORM
      */
-    public function update(Validation $validation = NULL)
-    {
+    public function update(Validation $validation = NULL) {
         $this->before_update($validation);
         Event::trigger('model.update.before', array($this, $validation));
 
@@ -665,8 +656,7 @@ class Reinforce_ORM extends Kohana_ORM
     /**
      * 下面這些函式應該被依照所需進行覆寫
      */
-    protected function before_save(Validation $validation = NULL)
-    {
+    protected function before_save(Validation $validation = NULL) {
         // 如果欄位資料
         //
         // 1) 欄位類型是 mysql 的 set 或 enum 類型，
@@ -684,58 +674,47 @@ class Reinforce_ORM extends Kohana_ORM
         }
     }
 
-    protected function after_save()
-    {
+    protected function after_save() {
 
     }
 
-    protected function before_create(Validation $validation = NULL)
-    {
+    protected function before_create(Validation $validation = NULL) {
 
     }
 
-    protected function after_create()
-    {
+    protected function after_create() {
 
     }
 
-    protected function before_update(Validation $validation = NULL)
-    {
+    protected function before_update(Validation $validation = NULL) {
 
     }
 
-    protected function after_update()
-    {
+    protected function after_update() {
 
     }
 
-    protected function before_delete()
-    {
+    protected function before_delete() {
 
     }
 
-    protected function after_delete()
-    {
+    protected function after_delete() {
 
     }
 
-    protected function before_find()
-    {
+    protected function before_find() {
 
     }
 
-    protected function after_find(ORM $object)
-    {
+    protected function after_find(ORM $object) {
 
     }
 
-    protected function before_find_all()
-    {
+    protected function before_find_all() {
 
     }
 
-    protected function after_find_all(Database_Result $result)
-    {
+    protected function after_find_all(Database_Result $result) {
 
     }
 
@@ -747,24 +726,22 @@ class Reinforce_ORM extends Kohana_ORM
 
     }
 
-    protected function next()
-    {
+    protected function next() {
         if ($this->loaded()) {
             // 下一筆(Next)的 ID
             $next_sql = "SELECT id FROM {$this->table_prefix()}{$this->table_name()} WHERE id = "
-                . "(SELECT MIN(id) FROM {$this->table_prefix()}{$this->table_name()} WHERE id > {$this->id})";
+                    . "(SELECT MIN(id) FROM {$this->table_prefix()}{$this->table_name()} WHERE id > {$this->id})";
             $next_id = DB::query(Database::SELECT, $next_sql)->execute()->get('id', 0);
 
             return $this->clear()->reset()->find($next_id);
         }
     }
 
-    protected function prev()
-    {
+    protected function prev() {
         if ($this->loaded()) {
             // 上一筆(Prev)的 ID
             $prev_sql = "SELECT id FROM {$this->table_prefix()}{$this->table_name()} WHERE id = "
-                . "(SELECT MAX(id) FROM {$this->table_prefix()}{$this->table_name()} WHERE id < {$this->id})";
+                    . "(SELECT MAX(id) FROM {$this->table_prefix()}{$this->table_name()} WHERE id < {$this->id})";
             $prev_id = DB::query(Database::SELECT, $prev_sql)->execute()->get('id', 0);
 
             return $this->clear()->reset()->find($prev_id);
