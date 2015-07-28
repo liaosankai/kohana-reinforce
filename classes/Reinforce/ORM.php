@@ -166,7 +166,7 @@ class Reinforce_ORM extends Kohana_ORM {
     // =====================================
 
     /**
-     * 使用樞紐表資料
+     * 取得/更新樞紐表資料
      *
      * @example
      *
@@ -177,11 +177,19 @@ class Reinforce_ORM extends Kohana_ORM {
      *       echo $role->pivot()->created_at;
      *   }
      *
-     * @param bool as_object 轉為純物件
+     * @param mix $data 欲更新的資料
      */
-    public function pivot() {
+    public function pivot($data = NULL) {
         extract($this->_pivot_relaction);
-
+        // 若有設定資料，就更新
+        if ($data) {
+            $query = DB::update($through)
+                    ->set($data)
+                    ->where($far_key, '=', $this->id)
+                    ->and_where($foreign_key, '=', $foreign_key_id)
+                    ->execute();
+            return $query;
+        }
         $pivot = DB::select()
                 ->from($through)
                 ->where($far_key, '=', $this->id)
@@ -189,7 +197,6 @@ class Reinforce_ORM extends Kohana_ORM {
                 ->as_object()
                 ->execute()
                 ->current();
-
         return $pivot;
     }
 
@@ -837,7 +844,7 @@ class Reinforce_ORM extends Kohana_ORM {
         // 如果欄位資料
         //
         // 1) 欄位類型是 mysql 的 set 或 enum 類型，
-        // 2) 欄位資料是陣列方
+        // 2) 欄位資料是陣列方式
         // 3) 不存在 $_serialize_columns 陣列中
         //
         // 就自動轉換成以逗號為分隔的字串
