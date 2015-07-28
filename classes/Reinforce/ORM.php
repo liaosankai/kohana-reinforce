@@ -183,8 +183,10 @@ class Reinforce_ORM extends Kohana_ORM {
         extract($this->_pivot_relaction);
         // 若有設定資料，就更新
         if ($data) {
+            $valid_columns = array_flip(array_keys(Database::instance()->list_columns($through)));
+            $valid_data = array_intersect_key($data, $valid_columns);
             $query = DB::update($through)
-                    ->set($data)
+                    ->set($valid_data)
                     ->where($far_key, '=', $this->id)
                     ->and_where($foreign_key, '=', $foreign_key_id)
                     ->execute();
