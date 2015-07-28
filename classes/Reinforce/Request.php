@@ -82,14 +82,22 @@ class Reinforce_Request extends Kohana_Request {
 
             // Handle raw to json data
             $parse_json = json_decode($body, TRUE);
-            $json_data = (json_last_error() === JSON_ERROR_NONE AND is_array($parse_json)) ? $parse_json : array();
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Request_Exception('Json Data Syntax Error');
+            } else {
+                $json_data = $parse_json;
+            }
 
             // Handle raw to xml
             $xml_data = array();
             if (empty($json_data)) {
                 libxml_use_internal_errors(TRUE);
                 $parse_xml = json_decode(json_encode(simplexml_load_string($body)), TRUE);
-                $xml_data = (json_last_error() === JSON_ERROR_NONE AND is_array($parse_xml)) ? $parse_xml : array();
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new Request_Exception('XML Data Syntax Error');
+                } else {
+                    $xml_data = $parse_xml;
+                }
             }
 
             // Handle x-www-form-urlencode data
