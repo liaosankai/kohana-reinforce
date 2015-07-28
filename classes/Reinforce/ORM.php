@@ -183,8 +183,20 @@ class Reinforce_ORM extends Kohana_ORM {
         extract($this->_pivot_relaction);
         // 若有設定資料，就更新
         if ($data) {
-            $valid_columns = array_flip(array_keys(Database::instance()->list_columns($through)));
+            $pivot_guarded = (empty($pivot_guarded) || !is_array($pivot_guarded)) ? array() : $pivot_guarded;
+            //若沒有設定白名單，使用 table 預設欄位當白名單
+            if (empty($pivot_fillable) || !is_array($pivot_fillable)) {
+                $pivot_fillable = array_flip(array_keys(Database::instance()->list_columns($through)));
+                $pivot_fillable = array_keys($pivot_fillable);
+            }
+            //將白名單中再扣除黑名單
+            $expected = array_diff($pivot_fillable, $pivot_guarded);
+            //扣除 FK 欄位
+            unset($pivot_fillable[$far_key]);
+            unset($pivot_fillable[$foreign_key]);
+            $valid_columns = array_flip($expected);
             $valid_data = array_intersect_key($data, $valid_columns);
+            // 更新 pivot 資料
             $query = DB::update($through)
                     ->set($valid_data)
                     ->where($far_key, '=', $this->id)
