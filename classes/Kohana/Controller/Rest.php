@@ -2,8 +2,7 @@
 
 defined('SYSPATH') OR die('No direct script access.');
 
-abstract class Kohana_Controller_Rest extends Kohana_Controller
-{
+abstract class Kohana_Controller_Rest extends Kohana_Controller {
 
     /**
      * @var integer 輸出的 HTTP 態碼
@@ -71,8 +70,7 @@ abstract class Kohana_Controller_Rest extends Kohana_Controller
      *
      * @return  Response
      */
-    public function execute()
-    {
+    public function execute() {
 
         // 取得小寫的 method 和 action
         $method = strtolower($this->request->method());
@@ -121,8 +119,7 @@ abstract class Kohana_Controller_Rest extends Kohana_Controller
     /**
      * 依照格式輸出 REST 結果
      */
-    private function _format_content()
-    {
+    private function _format_content() {
         //設定輸出的 HTTP 狀態碼
         $this->response->status($this->http_status);
 
