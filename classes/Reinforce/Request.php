@@ -84,8 +84,10 @@ class Reinforce_Request extends Kohana_Request {
             $parse_json = json_decode($body, TRUE);
             if (json_last_error() !== JSON_ERROR_NONE) {
                 throw new Request_Exception('Json Data Syntax Error');
-            } else {
+            } else if (is_array($parse_json)) {
                 $json_data = $parse_json;
+            } else {
+                $json_data = array();
             }
 
             // Handle raw to xml
@@ -95,8 +97,10 @@ class Reinforce_Request extends Kohana_Request {
                 $parse_xml = json_decode(json_encode(simplexml_load_string($body)), TRUE);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new Request_Exception('XML Data Syntax Error');
-                } else {
+                } else if (is_array($parse_xml)) {
                     $xml_data = $parse_xml;
+                } else {
+                    $xml_data = array();
                 }
             }
 
