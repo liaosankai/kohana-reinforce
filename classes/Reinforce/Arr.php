@@ -2,16 +2,39 @@
 
 defined('SYSPATH') OR die('No direct script access.');
 
-class Reinforce_Arr extends Kohana_Arr
-{
+class Reinforce_Arr extends Kohana_Arr {
+
+    /**
+     * 插入元素到指定 key 之後
+     *
+     * @param type $arr
+     * @param type $insert_key
+     * @param type $key
+     * @param type $value
+     * @return type
+     */
+    public static function insert_after(&$arr, $insert_key, $key, $value) {
+        $keys = array_keys($arr);
+        $vals = array_values($arr);
+
+        $insert_after = array_search($insert_key, $keys) + 1;
+
+        $keys2 = array_splice($keys, $insert_after);
+        $vals2 = array_splice($vals, $insert_after);
+
+        $keys[] = $key;
+        $vals[] = $value;
+
+        return array_merge(array_combine($keys, $vals), array_combine($keys2, $vals2));
+    }
+
     /**
      * check is 2D array
      *
      * @param array array
      * @return boolean
      */
-    public static function is_2d($array)
-    {
+    public static function is_2d($array) {
         if (!is_array($array)) {
             return FALSE;
         }
@@ -23,6 +46,7 @@ class Reinforce_Arr extends Kohana_Arr
         }
         return TRUE;
     }
+
     /**
      * 從陣列中挑出符合列舉陣列中的元素
      *
@@ -38,8 +62,7 @@ class Reinforce_Arr extends Kohana_Arr
      * @param array $array
      * @return array
      */
-    public static function match_enum($array, $enum_array)
-    {
+    public static function match_enum($array, $enum_array) {
         return array_diff($array, array_diff($array, $enum_array));
     }
 
@@ -84,8 +107,7 @@ class Reinforce_Arr extends Kohana_Arr
      * @param string $glue
      * @return array
      */
-    public static function flatten($array, $prefix = '', $glue = '.')
-    {
+    public static function flatten($array, $prefix = '', $glue = '.') {
         $result = array();
         foreach ($array as $key => $value) {
             if (is_array($value)) {
@@ -96,48 +118,42 @@ class Reinforce_Arr extends Kohana_Arr
         }
         return $result;
     }
-    
-	/**
-	 * 反解被扁平化的陣列
-	 *
-	 * @param array $array  flattened array
-	 * @param string $glue   glue used in flattening
-	 * @return array
-	 */
-	public static function reverse_flatten($array, $glue = '.')
-	{
-		$return = array();
 
-		foreach ($array as $key => $value)
-		{
-			if (stripos($key, $glue) !== false)
-			{
-				$keys = explode($glue, $key);
-				$temp =& $return;
-				while (count($keys) > 1)
-				{
-					$key = array_shift($keys);
-					$key = is_numeric($key) ? (int) $key : $key;
-					if ( ! isset($temp[$key]) or ! is_array($temp[$key]))
-					{
-						$temp[$key] = array();
-					}
-					$temp =& $temp[$key];
-				}
+    /**
+     * 反解被扁平化的陣列
+     *
+     * @param array $array  flattened array
+     * @param string $glue   glue used in flattening
+     * @return array
+     */
+    public static function reverse_flatten($array, $glue = '.') {
+        $return = array();
 
-				$key = array_shift($keys);
-				$key = is_numeric($key) ? (int) $key : $key;
-				$temp[$key] = $value;
-			}
-			else
-			{
-				$key = is_numeric($key) ? (int) $key : $key;
-				$return[$key] = $value;
-			}
-		}
+        foreach ($array as $key => $value) {
+            if (stripos($key, $glue) !== false) {
+                $keys = explode($glue, $key);
+                $temp = & $return;
+                while (count($keys) > 1) {
+                    $key = array_shift($keys);
+                    $key = is_numeric($key) ? (int) $key : $key;
+                    if (!isset($temp[$key]) or ! is_array($temp[$key])) {
+                        $temp[$key] = array();
+                    }
+                    $temp = & $temp[$key];
+                }
 
-		return $return;
-	}
+                $key = array_shift($keys);
+                $key = is_numeric($key) ? (int) $key : $key;
+                $temp[$key] = $value;
+            } else {
+                $key = is_numeric($key) ? (int) $key : $key;
+                $return[$key] = $value;
+            }
+        }
+
+        return $return;
+    }
+
     /**
      * 翻轉一個二維陣列
      *
@@ -165,8 +181,7 @@ class Reinforce_Arr extends Kohana_Arr
      *                if your subkeys might not match, you need to pass FALSE here!
      * @return array
      */
-    public static function rotate($source_array, $keep_keys = TRUE)
-    {
+    public static function rotate($source_array, $keep_keys = TRUE) {
         $new_array = array();
 
         foreach ($source_array as $key => $value) {
@@ -197,8 +212,7 @@ class Reinforce_Arr extends Kohana_Arr
      * @param string $key 可以是數字或字串索引
      * @return mixed
      */
-    public static function pull(array &$array, $key = null)
-    {
+    public static function pull(array &$array, $key = null) {
         $value = Arr::get($array, $key);
         Arr::delete($array, $key);
         return $value;
@@ -230,8 +244,7 @@ class Reinforce_Arr extends Kohana_Arr
      * @param   mixed $key The dot-notated key or array of keys
      * @return  mixed
      */
-    public static function delete(&$array, $key)
-    {
+    public static function delete(&$array, $key) {
         if (is_null($key)) {
             return false;
         }
@@ -246,7 +259,7 @@ class Reinforce_Arr extends Kohana_Arr
 
         $key_parts = explode('.', $key);
 
-        if (!is_array($array) or !array_key_exists($key_parts[0], $array)) {
+        if (!is_array($array) or ! array_key_exists($key_parts[0], $array)) {
             return false;
         }
 
@@ -270,8 +283,7 @@ class Reinforce_Arr extends Kohana_Arr
      * @param boolean $case_insensitive
      * @return boolean
      */
-    public static function in_array($needle, $haystack, $strict = FALSE, $case_insensitive = TRUE)
-    {
+    public static function in_array($needle, $haystack, $strict = FALSE, $case_insensitive = TRUE) {
         $needle = $case_insensitive ? strtolower($needle) : $needle;
         $haystack = $case_insensitive ? array_map('strtolower', $haystack) : $haystack;
         return in_array($needle, $haystack, $strict);
@@ -291,8 +303,7 @@ class Reinforce_Arr extends Kohana_Arr
      *              This value may be the integer key of the column, or it may be the string key name.
      * @return boolean
      */
-    public static function column($array = null, $column_key = null, $index_key = null)
-    {
+    public static function column($array = null, $column_key = null, $index_key = null) {
         if (function_exists('array_column')) {
             return array_column($array, $column_key, $index_key);
         }
@@ -325,14 +336,14 @@ class Reinforce_Arr extends Kohana_Arr
         }
 
         $paramsInput = $params[0];
-        $paramsColumnKey = ($params[1] !== null) ? (string)$params[1] : null;
+        $paramsColumnKey = ($params[1] !== null) ? (string) $params[1] : null;
 
         $paramsIndexKey = null;
         if (isset($params[2])) {
             if (is_float($params[2]) || is_int($params[2])) {
-                $paramsIndexKey = (int)$params[2];
+                $paramsIndexKey = (int) $params[2];
             } else {
-                $paramsIndexKey = (string)$params[2];
+                $paramsIndexKey = (string) $params[2];
             }
         }
 
@@ -345,7 +356,7 @@ class Reinforce_Arr extends Kohana_Arr
 
             if ($paramsIndexKey !== null && array_key_exists($paramsIndexKey, $row)) {
                 $keySet = true;
-                $key = (string)$row[$paramsIndexKey];
+                $key = (string) $row[$paramsIndexKey];
             }
 
             if ($paramsColumnKey === null) {
