@@ -411,6 +411,186 @@ class Reinforce_ORM extends Kohana_ORM {
     }
 
     /**
+     * 以字串是否帶有 % 開頭，自動決定使用 LIKE 或 =
+     */
+    public function where_string_such($column, $string) {
+        // 如果欄位名稱中沒有 . ，追加自己的 object name
+        if (substr_count($column, '.') === 0) {
+            $column = $this->object_name() . '.' . $column;
+        }
+        $string_arr = array_filter(explode('|', $string));
+        foreach ($string_arr as $string) {
+            if (Text::starts_with($string, '%') || Text::ends_with($string, '%')) {
+                $this->and_where_open();
+                $this->where($column, 'LIKE', $string);
+                $this->and_where_close();
+            } else {
+                $this->and_where_open();
+                $this->where($column, '=', $string);
+                $this->and_where_close();
+            }
+        }
+        return $this;
+    }
+
+    /**
+     * 以字串表達時間型範圍查詢
+     *
+     * 例如： '2015'             表示 2015-01-01 00:00:00 到 2015-12-31 23:59:59
+     * 例如： '2015-03'          表示 2015-03-01 00:00:00 到 2015-03-31 23:59:59
+     * 例如： '2015-03-15'       表示 2015-03-15 00:00:00 到 2015-03-15 23:59:59
+     * 例如： '2015~2016'        表示 2015-01-01 00:00:00 到 2016-12-31 23:59:59
+     * 例如： '2015-03~2015-04'  表示 2014-03-01 00:00:00 到 2015-04-30 23:59:59
+     * 例如： '>2015'            表示 >  2015-12-31 23:59:59
+     * 例如： '>=2015'           表示 >= 2015-01-01 00:00:00
+     * 例如： '<2015'            表示 <  2015-01-01 00:00:00
+     * 例如： '<=2015'           表示 <= 2015-12-31 23:59:59
+     *
+     * @param $query
+     * @param $column 查詢欄位
+     * @param $range 查詢字串
+     * @return $query
+     */
+    public function where_datetime_range($column, $range) {
+        // 如果欄位名稱中沒有 . ，追加自己的 object name
+        if (substr_count($column, '.') === 0) {
+            $column = $this->object_name() . '.' . $column;
+        }
+        // 移除無效的字元
+        $range_chars = str_split($range);
+        foreach ($range_chars as $index => $char) {
+            if (!in_array($char, ['>', '=', '<', '.', '!', '~', ' ', '-', ':']) and ! is_numeric($char)) {
+                unset($range_chars[$index]);
+            }
+        }
+        $range = join('', $range_chars);
+
+        // 將多個空白字元取代成一個空白字元，並移除頭尾空白
+        $range = trim(preg_replace('/ {2,}/', ' ', str_replace(array("\r", "\n", "\t", "\x0B", "\x0C"), ' ', $range)));
+
+        // 移除放在最後的運算子
+        $range = trim(rtrim($range, '>=<'));
+
+        // 是否包含 '>','<','=','~' 運算子
+        // 沒有的話就將 2015 轉成 2015~2015
+        $intersect = array_intersect(str_split($range), ['>', '<', '=', '~']);
+        $range = count($intersect) ? $range : "{$range}~{$range}";
+
+        // 將 ~2015 轉成 <=2015
+        $range = Text::starts_with($range, '~') ? "<=" . trim($range, "~>=<") : $range;
+        // 將 2015~ 轉成 >=2015
+        $range = Text::ends_with($range, '~') ? ">=" . trim($range, "~>=<") : $range;
+
+        // 決定最後運算子
+        foreach (['<=', '>=', '<', '>'] as $valid_op) {
+            if (starts_with($range, $valid_op)) {
+                $op = $valid_op;
+                break;
+            }
+            $op = '~';
+            $between = array_filter(explode('~', $range));
+            $left = Arr::get($between, 0, '');
+            $right = Arr::get($between, 1, '');
+        }
+
+        // 組合最終查詢
+        switch ($op) {
+            case '>':
+            case '<=':
+                $datetime = $this->strToYmdHis(trim($range, '>=<'), true);
+                $this->and_where_open();
+                $this->where($column, $op, $datetime);
+                $this->and_where_close();
+                break;
+            case '<':
+            case '>=':
+                $datetime = $this->strToYmdHis(trim($range, '>=<'), false);
+                $this->and_where_open();
+                $this->where($column, $op, $datetime);
+                $this->and_where_close();
+                break;
+            case '~':
+            default:
+                $start = $this->strToYmdHis(trim($left, '>=<'), false);
+                $end = $this->strToYmdHis(trim($right, '>=<'), true);
+                $this->and_where_open();
+                $this->where($column, 'BETWEEN', array($start, $end));
+                $this->and_where_close();
+        }
+
+        return $this;
+    }
+
+    /**
+     * 以字串表達數字型查詢
+     *
+     * 例如： '50~100' 表示 50 到 100
+     * 例如： '>=50' 表示 50 以上，'50~' 亦同
+     * 例如： '<=50' 表示 50 以下，'~50' 亦同
+     * 例如： '>50' 超過 50
+     * 例如： '<50' 不足 50
+     * 例如： '50' 等於 50
+     *
+     * @param $query
+     * @param $column 查詢欄位
+     * @param $range 查詢字串
+     * @return $query
+     */
+    public function where_number_range($column, $range) {
+        // 如果欄位名稱中沒有 . ，追加自己的 object name
+        if (substr_count($column, '.') === 0) {
+            $column = $this->object_name() . '.' . $column;
+        }
+        // 移除無效的字元
+        $range_chars = str_split($range);
+        foreach ($range_chars as $index => $char) {
+            if (!in_array($char, ['>', '=', '<', '.', '!', '~', '-']) and ! is_numeric($char)) {
+                unset($range_chars[$index]);
+            }
+        }
+        $range = join('', $range_chars);
+
+        // 移除放在最後的運算子
+        $range = rtrim($range, '>=<');
+
+        if (Text::contains($range, '~')) {
+            $between = array_filter(explode('~', $range));
+            $min = Arr::get($between, 0, '');
+            $max = Arr::get($between, 1, '');
+
+            if (is_numeric($min) and is_numeric($max)) {
+                // 處理 '1~50' 或 '50~1'
+                $min = min([$min, $max]);
+                $max = max([$min, $max]);
+                $this->and_where_open();
+                $this->where($column, 'BETWEEN', array($min, $max));
+                $this->and_where_close();
+                return $this;
+            } else if (is_numeric($min) and ! is_numeric($max)) {
+                // 將 '50~' 轉成 '>=50'
+                $range = ">={$min}";
+            } else if (!is_numeric($min) and is_numeric($max)) {
+                // 將 '~50' 轉成 '<=50'
+                $range = "<={$max}";
+            }
+        }
+        // 取得運算符號和數字
+        $op = preg_replace('/[0-9]+/', '', $range);
+        $number = preg_replace('/[^0-9]+/', '', $range);
+        if (in_array($op, ['<', '<=', '>', '>='])) {
+            $this->and_where_open();
+            $this->where($column, $op, $number);
+            $this->and_where_close();
+            return $this;
+        } else if (is_numeric($number)) {
+            $this->and_where_open();
+            $this->where($column, '=', $number);
+            $this->and_where_close();
+            return $this;
+        }
+    }
+
+    /**
      * Proxy method to Database list_columns.
      *
      * @return array
@@ -426,35 +606,6 @@ class Reinforce_ORM extends Kohana_ORM {
         $cached = parent::list_columns();
         Kohana::cache($cache_id, $cached);
         return $cached;
-    }
-
-    /**
-     * 使用字串的方式來追加 BETWEEN 的絛件
-     *
-     * @param String $column 欄位
-     * @param String $range 範圍字串
-     * @param String $delimiter 範圍的分隔符號
-     * @return \Reinforce_ORM
-     */
-    public function where_range($column, $range = null, $delimiter = '~') {
-        $between = explode($delimiter, $range);
-
-        if (count($between) == 2) {
-            $start = trim(Arr::get($between, 0, ''));
-            $end = trim(Arr::get($between, 1, ''));
-
-            if (($start == '' or $start == '*') and $end != '') {
-                //range: "* ~ 10"
-                $this->where($column, '<=', $end);
-            } else if ($start != '' and ( $end == '' or $end == '*')) {
-                //range: "1 ~ *"
-                $this->where($column, '>=', $start);
-            } else {
-                //range: "1 ~ 10"
-                $this->where($column, "BETWEEN", DB::expr("{$start} AND {$end}"));
-            }
-        }
-        return $this;
     }
 
     /**
@@ -528,143 +679,13 @@ class Reinforce_ORM extends Kohana_ORM {
             $sort_column = str_replace('-', '', $sort_str);
             $sort_column = str_replace('+', '', $sort_column);
 
+            // 如果欄位名稱中沒有 . ，追加自己的 object name
+            if (substr_count($sort_column, '.') === 0) {
+                $sort_column = $this->object_name() . '.' . $sort_column;
+            }
             $this->order_by($sort_column, $sort_direction);
         }
         return $this;
-    }
-
-    /**
-     * 以字串表達時間型範圍查詢
-     *
-     * 例如： '2015'             表示 2015-01-01 00:00:00 到 2015-12-31 23:59:59
-     * 例如： '2015-03'          表示 2015-03-01 00:00:00 到 2015-03-31 23:59:59
-     * 例如： '2015-03-15'       表示 2015-03-15 00:00:00 到 2015-03-15 23:59:59
-     * 例如： '2015~2016'        表示 2015-01-01 00:00:00 到 2016-12-31 23:59:59
-     * 例如： '2015-03~2015-04'  表示 2014-03-01 00:00:00 到 2015-04-30 23:59:59
-     * 例如： '>2015'            表示 >  2015-12-31 23:59:59
-     * 例如： '>=2015'           表示 >= 2015-01-01 00:00:00
-     * 例如： '<2015'            表示 <  2015-01-01 00:00:00
-     * 例如： '<=2015'           表示 <= 2015-12-31 23:59:59
-     *
-     * @param $query
-     * @param $column 查詢欄位
-     * @param $range 查詢字串
-     * @return $query
-     */
-    public function where_datetime_range($column, $range) {
-        // 移除無效的字元
-        $range_chars = str_split($range);
-        foreach ($range_chars as $index => $char) {
-            if (!in_array($char, ['>', '=', '<', '.', '!', '~', ' ', '-', ':']) and ! is_numeric($char)) {
-                unset($range_chars[$index]);
-            }
-        }
-        $range = join('', $range_chars);
-
-        // 將多個空白字元取代成一個空白字元，並移除頭尾空白
-        $range = trim(preg_replace('/ {2,}/', ' ', str_replace(array("\r", "\n", "\t", "\x0B", "\x0C"), ' ', $range)));
-
-        // 移除放在最後的運算子
-        $range = trim(rtrim($range, '>=<'));
-
-        // 是否包含 '>','<','=','~' 運算子
-        // 沒有的話就將 2015 轉成 2015~2015
-        $intersect = array_intersect(str_split($range), ['>', '<', '=', '~']);
-        $range = count($intersect) ? $range : "{$range}~{$range}";
-
-        // 將 ~2015 轉成 <=2015
-        $range = Text::starts_with($range, '~') ? "<=" . trim($range, "~>=<") : $range;
-        // 將 2015~ 轉成 >=2015
-        $range = Text::ends_with($range, '~') ? ">=" . trim($range, "~>=<") : $range;
-
-        // 決定最後運算子
-        foreach (['<=', '>=', '<', '>'] as $valid_op) {
-            if (starts_with($range, $valid_op)) {
-                $op = $valid_op;
-                break;
-            }
-            $op = '~';
-            $between = array_filter(explode('~', $range));
-            $left = array_get($between, 0, '');
-            $right = array_get($between, 1, '');
-        }
-
-        // 組合最終查詢
-        switch ($op) {
-            case '>':
-            case '<=':
-                $datetime = $this->strToYmdHis(trim($range, '>=<'), true);
-                $this->where($column, $op, $datetime);
-                break;
-            case '<':
-            case '>=':
-                $datetime = $this->strToYmdHis(trim($range, '>=<'), false);
-                $this->where($column, $op, $datetime);
-                break;
-            case '~':
-            default:
-                $start = $this->strToYmdHis(trim($left, '>=<'), false);
-                $end = $this->strToYmdHis(trim($right, '>=<'), true);
-                $this->where($column, 'BETWEEN', array($start, $end));
-        }
-
-        return $this;
-    }
-
-    /**
-     * 以字串表達數字型查詢
-     *
-     * 例如： '50~100' 表示 50 到 100
-     * 例如： '>=50' 表示 50 以上，'50~' 亦同
-     * 例如： '<=50' 表示 50 以下，'~50' 亦同
-     * 例如： '>50' 超過 50
-     * 例如： '<50' 不足 50
-     * 例如： '50' 等於 50
-     *
-     * @param $query
-     * @param $column 查詢欄位
-     * @param $range 查詢字串
-     * @return $query
-     */
-    public function where_number_range($column, $range) {
-        // 移除無效的字元
-        $range_chars = str_split($range);
-        foreach ($range_chars as $index => $char) {
-            if (!in_array($char, ['>', '=', '<', '.', '!', '~', '-']) and ! is_numeric($char)) {
-                unset($range_chars[$index]);
-            }
-        }
-        $range = join('', $range_chars);
-
-        // 移除放在最後的運算子
-        $range = rtrim($range, '>=<');
-
-        if (str_contains($range, '~')) {
-            $between = array_filter(explode('~', $range));
-            $min = array_get($between, 0, '');
-            $max = array_get($between, 1, '');
-
-            if (is_numeric($min) and is_numeric($max)) {
-                // 處理 '1~50' 或 '50~1'
-                $min = min([$min, $max]);
-                $max = max([$min, $max]);
-                return $this->where($column, 'BETWEEN', array($min, $max));
-            } else if (is_numeric($min) and ! is_numeric($max)) {
-                // 將 '50~' 轉成 '>=50'
-                $range = ">={$min}";
-            } else if (!is_numeric($min) and is_numeric($max)) {
-                // 將 '~50' 轉成 '<=50'
-                $range = "<={$max}";
-            }
-        }
-        // 取得運算符號和數字
-        $op = preg_replace('/[0-9]+/', '', $range);
-        $number = preg_replace('/[^0-9]+/', '', $range);
-        if (in_array($op, ['<', '<=', '>', '>='])) {
-            return $this->where($column, $op, $number);
-        } else if (is_numeric($number)) {
-            return $this->where($column, '=', $number);
-        }
     }
 
     /**
@@ -689,18 +710,18 @@ class Reinforce_ORM extends Kohana_ORM {
         $datetime = array_filter(explode(' ', trim($datetime)));
 
         // 處理日期部分
-        $date = array_get($datetime, 0, '');
+        $date = Arr::get($datetime, 0, '');
         $Ymd = array_filter(explode('-', $date));
-        $Y = array_get($Ymd, 0, '');
-        $m = array_get($Ymd, 1, ($isLast) ? 12 : 01);
-        $d = array_get($Ymd, 2, ($isLast) ? date("t", strtotime("{$Y}-{$m}-01")) : 01);
+        $Y = Arr::get($Ymd, 0, '');
+        $m = Arr::get($Ymd, 1, ($isLast) ? 12 : 01);
+        $d = Arr::get($Ymd, 2, ($isLast) ? date("t", strtotime("{$Y}-{$m}-01")) : 01);
 
         // 處理時間部分
-        $time = array_get($datetime, 1, '');
+        $time = Arr::get($datetime, 1, '');
         $His = array_filter(explode(':', $time));
-        $H = array_get($His, 0, ($isLast) ? 23 : 00);
-        $i = array_get($His, 1, ($isLast) ? 59 : 00);
-        $s = array_get($His, 2, ($isLast) ? 59 : 00);
+        $H = Arr::get($His, 0, ($isLast) ? 23 : 00);
+        $i = Arr::get($His, 1, ($isLast) ? 59 : 00);
+        $s = Arr::get($His, 2, ($isLast) ? 59 : 00);
 
         return strlen($Y) ? date('Y-m-d H:i:s', mktime($H, $i, $s, $m, $d, $Y)) : '';
     }
