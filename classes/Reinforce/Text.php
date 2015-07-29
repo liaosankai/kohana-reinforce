@@ -4,6 +4,21 @@ defined('SYSPATH') OR die('No direct script access.');
 
 class Reinforce_Text extends Kohana_Text {
 
+    /**
+     * Determine if a given string contains a given substring.
+     *
+     * @param  string  $haystack
+     * @param  string|array  $needles
+     * @return bool
+     */
+    public static function contains($haystack, $needles) {
+        foreach ((array) $needles as $needle) {
+            if ($needle != '' && strpos($haystack, $needle) !== false)
+                return true;
+        }
+        return false;
+    }
+
     static public function starts_with($haystack, $needle) {
         // search backwards starting from haystack length characters from the end
         return $needle === "" || strrpos($haystack, $needle, -strlen($haystack)) !== FALSE;
