@@ -37,7 +37,7 @@ abstract class Kohana_Controller_Rest extends Kohana_Controller {
     /**
      * @var boolean json_encode 時，使用 JSON_NUMERIC_CHECK 參數
      */
-    protected $json_numeric_check = FALSE;
+    protected $json_numeric_check = TRUE;
 
     /**
      * @var array 支援的輸出格式
