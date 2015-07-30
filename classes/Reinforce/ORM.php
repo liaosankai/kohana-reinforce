@@ -4,7 +4,6 @@ defined('SYSPATH') OR die('No direct script access.');
 
 class Reinforce_ORM extends Kohana_ORM {
 
-    //
     protected $_pivot_relaction;
 
     /**
@@ -56,16 +55,27 @@ class Reinforce_ORM extends Kohana_ORM {
      */
     protected $_connection = 'default';
 
-    /**
-     * ======== 原生函式強化 ========
-     */
+// ======== 原生函式強化 =========================================================
+//   這區段的函式是原本 ORM 就有的函式
+//   只是將它再做一些強化的補充
+// =============================================================================
 
     /**
-     * 取得資料表單前綴詞
-     * @return string
+     * 強化 table_columns 能夠遞迴取得 with 關聯的欄位資訊
+     *
+     * @param Boolean $include_with 是否將包含 with 的部分也帶出來
+     * @return Array 表單欄位資訊
      */
-    public function table_prefix() {
-        return $this->_db->table_prefix();
+    public function table_columns($include_with = FALSE) {
+        $table_columns = $this->_table_columns;
+        if ($include_with) {
+            foreach (array_keys($this->_with_applied) as $relation) {
+                if ($this->$relation instanceof ORM) {
+                    $table_columns[$relation] = $this->$relation->table_columns();
+                }
+            }
+        }
+        return $table_columns;
     }
 
     /**
@@ -160,10 +170,93 @@ class Reinforce_ORM extends Kohana_ORM {
         }
     }
 
-    // ======== 擴充函式強化 ===============
-    // 下面的函式為原生 ORM 官方所沒有的
-    // 但因為好用或使用頻繁，所以擴充追加
-    // =====================================
+    /**
+     * ※ 因應 pivot 的功能，所以如果是多對多關聯表的，要記錄樞紐表資訊
+     *
+     * Handles getting of column
+     * Override this method to add custom get behavior
+     *
+     * @param string $column Column name
+     * @throws Kohana_Exception
+     * @return mixed
+     */
+    public function get($column) {
+        if (array_key_exists($column, $this->_object)) {
+            return (in_array($column, $this->_serialize_columns)) ?
+                    $this->_unserialize_value($this->_object[$column]) : $this->_object[$column];
+        } else if (isset($this->_related[$column])) {
+            // Return related model that has already been fetched
+            return $this->_related[$column];
+        } else if (isset($this->_belongs_to[$column])) {
+            $model = $this->_related($column);
+
+            // Use this model's column and foreign model's primary key
+            $col = $model->_object_name . '.' . $model->_primary_key;
+            $val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
+
+            // Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would
+            // return the last inserted record instead of an empty result.
+            // See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
+            if ($val !== NULL) {
+                $model->where($col, '=', $val)->find();
+            }
+
+            return $this->_related[$column] = $model;
+        } else if (isset($this->_has_one[$column])) {
+            $model = $this->_related($column);
+
+            // Use this model's primary key value and foreign model's column
+            $col = $model->_object_name . '.' . $this->_has_one[$column]['foreign_key'];
+            $val = $this->pk();
+
+            $model->where($col, '=', $val)->find();
+
+            return $this->_related[$column] = $model;
+        } else if (isset($this->_has_many[$column])) {
+
+            if (isset($this->_has_many[$column]['through'])) {
+
+                $this->_has_many[$column]['foreign_key_id'] = $this->id;
+
+                // Grab has_many "through" relationship table
+                $through = $this->_has_many[$column]['through'];
+
+                $model = ORM::factory($this->_has_many[$column]['model'], NULL, $this->_has_many[$column]);
+
+                // Join on through model's target foreign key (far_key) and target model's primary key
+                $join_col1 = $through . '.' . $this->_has_many[$column]['far_key'];
+                $join_col2 = $model->_object_name . '.' . $model->_primary_key;
+
+                $model->join($through)->on($join_col1, '=', $join_col2);
+
+                // Through table's source foreign key (foreign_key) should be this model's primary key
+                $col = $through . '.' . $this->_has_many[$column]['foreign_key'];
+                $val = $this->pk();
+            } else {
+                $model = ORM::factory($this->_has_many[$column]['model']);
+                // Simple has_many relationship, search where target model's foreign key is this model's primary key
+                $col = $model->_object_name . '.' . $this->_has_many[$column]['foreign_key'];
+                $val = $this->pk();
+            }
+
+            return $model->where($col, '=', $val);
+        } else {
+            throw new Kohana_Exception('The :property property does not exist in the :class class', array(':property' => $column, ':class' => get_class($this)));
+        }
+    }
+
+// ======== 擴充函式強化 =========================================================
+// 下面的函式為原生 ORM 官方所沒有的
+// 但因為好用或使用頻繁，所以擴充追加
+// =============================================================================
+
+    /**
+     * 取得資料表單前綴詞
+     * @return string
+     */
+    public function table_prefix() {
+        return $this->_db->table_prefix();
+    }
 
     /**
      * 取得/更新樞紐表資料
@@ -174,8 +267,25 @@ class Reinforce_ORM extends Kohana_ORM {
      *
      *   foreach ($user->roles->find_all() as $role)
      *   {
-     *       echo $role->pivot()->created_at;
+     *       // 取得屬性
+     *       echo Arr::get($role->pivot(), 'created_at');
+     *       // 設定屬性
+     *       $role->pivot(array(
+     *           'created_at' => date()
+     *       ));
      *   }
+     *
+     * 設定屬性會受到黑名單(pivot_guarded)和白名單(pivot_fillable)影響
+     *
+     *    protected $_has_many = array(
+     *      'characters' => array(
+     *          'model' => 'Character',
+     *          'foreign_key' => 'player_id',
+     *          'through' => 'characters_players',
+     *          'pivot_guarded' => array(),
+     *          'pivot_fillable' => array(),
+     *      ),
+     *   )
      *
      * @param mix $data 欲更新的資料
      */
@@ -273,82 +383,6 @@ class Reinforce_ORM extends Kohana_ORM {
     }
 
     /**
-     * ※ 如果是多對多關聯表的，要記錄樞紐表資訊
-     *
-     * Handles getting of column
-     * Override this method to add custom get behavior
-     *
-     * @param string $column Column name
-     * @throws Kohana_Exception
-     * @return mixed
-     */
-    public function get($column) {
-        if (array_key_exists($column, $this->_object)) {
-            return (in_array($column, $this->_serialize_columns)) ?
-                    $this->_unserialize_value($this->_object[$column]) : $this->_object[$column];
-        } else if (isset($this->_related[$column])) {
-            // Return related model that has already been fetched
-            return $this->_related[$column];
-        } else if (isset($this->_belongs_to[$column])) {
-            $model = $this->_related($column);
-
-            // Use this model's column and foreign model's primary key
-            $col = $model->_object_name . '.' . $model->_primary_key;
-            $val = $this->_object[$this->_belongs_to[$column]['foreign_key']];
-
-            // Make sure we don't run WHERE "AUTO_INCREMENT column" = NULL queries. This would
-            // return the last inserted record instead of an empty result.
-            // See: http://mysql.localhost.net.ar/doc/refman/5.1/en/server-session-variables.html#sysvar_sql_auto_is_null
-            if ($val !== NULL) {
-                $model->where($col, '=', $val)->find();
-            }
-
-            return $this->_related[$column] = $model;
-        } else if (isset($this->_has_one[$column])) {
-            $model = $this->_related($column);
-
-            // Use this model's primary key value and foreign model's column
-            $col = $model->_object_name . '.' . $this->_has_one[$column]['foreign_key'];
-            $val = $this->pk();
-
-            $model->where($col, '=', $val)->find();
-
-            return $this->_related[$column] = $model;
-        } else if (isset($this->_has_many[$column])) {
-
-            if (isset($this->_has_many[$column]['through'])) {
-
-                $this->_has_many[$column]['foreign_key_id'] = $this->id;
-
-                // Grab has_many "through" relationship table
-                $through = $this->_has_many[$column]['through'];
-
-                //
-                $model = ORM::factory($this->_has_many[$column]['model'], NULL, $this->_has_many[$column]);
-
-                // Join on through model's target foreign key (far_key) and target model's primary key
-                $join_col1 = $through . '.' . $this->_has_many[$column]['far_key'];
-                $join_col2 = $model->_object_name . '.' . $model->_primary_key;
-
-                $model->join($through)->on($join_col1, '=', $join_col2);
-
-                // Through table's source foreign key (foreign_key) should be this model's primary key
-                $col = $through . '.' . $this->_has_many[$column]['foreign_key'];
-                $val = $this->pk();
-            } else {
-                $model = ORM::factory($this->_has_many[$column]['model']);
-                // Simple has_many relationship, search where target model's foreign key is this model's primary key
-                $col = $model->_object_name . '.' . $this->_has_many[$column]['foreign_key'];
-                $val = $this->pk();
-            }
-
-            return $model->where($col, '=', $val);
-        } else {
-            throw new Kohana_Exception('The :property property does not exist in the :class class', array(':property' => $column, ':class' => get_class($this)));
-        }
-    }
-
-    /**
      * Removes a relationship between this model and another.
      *
      *     // Remove a role using a model instance
@@ -378,7 +412,7 @@ class Reinforce_ORM extends Kohana_ORM {
         if ($far_keys !== NULL) {
             $far_keys = (array) $far_keys;
             if (!empty($far_keys)) {
-                // Remove all the relationships in the array
+// Remove all the relationships in the array
                 $query->where($this->_has_many[$alias]['far_key'], 'NOT IN', $far_keys);
             } else {
                 return $this;
@@ -414,7 +448,7 @@ class Reinforce_ORM extends Kohana_ORM {
      * 以字串是否帶有 % 開頭，自動決定使用 LIKE 或 =
      */
     public function where_string_such($column, $string) {
-        // 如果欄位名稱中沒有 . ，追加自己的 object name
+// 如果欄位名稱中沒有 . ，追加自己的 object name
         if (substr_count($column, '.') === 0) {
             $column = $this->object_name() . '.' . $column;
         }
@@ -878,7 +912,7 @@ class Reinforce_ORM extends Kohana_ORM {
     protected function before_save(Validation $validation = NULL) {
         // 如果欄位資料
         //
-        // 1) 欄位類型是 mysql 的 set 或 enum 類型，
+            // 1) 欄位類型是 mysql 的 set 或 enum 類型，
         // 2) 欄位資料是陣列方式
         // 3) 不存在 $_serialize_columns 陣列中
         //
