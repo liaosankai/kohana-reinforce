@@ -578,7 +578,7 @@ class Reinforce_ORM extends Kohana_ORM {
         // 移除無效的字元
         $range_chars = str_split($range);
         foreach ($range_chars as $index => $char) {
-            if (!in_array($char, ['>', '=', '<', '.', '!', '~', '-']) and ! is_numeric($char)) {
+            if (!in_array($char, array('>', '=', '<', '.', '!', '~', '-')) and ! is_numeric($char)) {
                 unset($range_chars[$index]);
             }
         }
@@ -594,8 +594,8 @@ class Reinforce_ORM extends Kohana_ORM {
 
             if (is_numeric($min) and is_numeric($max)) {
                 // 處理 '1~50' 或 '50~1'
-                $min = min([$min, $max]);
-                $max = max([$min, $max]);
+                $min = floatval(min(array($min, $max)));
+                $max = floatval(max(array($min, $max)));
                 $this->and_where_open();
                 $this->where($column, 'BETWEEN', array($min, $max));
                 $this->and_where_close();
@@ -611,14 +611,15 @@ class Reinforce_ORM extends Kohana_ORM {
         // 取得運算符號和數字
         $op = preg_replace('/[0-9]+/', '', $range);
         $number = preg_replace('/[^0-9]+/', '', $range);
+
         if (in_array($op, ['<', '<=', '>', '>='])) {
             $this->and_where_open();
-            $this->where($column, $op, $number);
+            $this->where($column, $op, floatval($number));
             $this->and_where_close();
             return $this;
         } else if (is_numeric($number)) {
             $this->and_where_open();
-            $this->where($column, '=', $number);
+            $this->where($column, '=', floatval($number));
             $this->and_where_close();
             return $this;
         }
