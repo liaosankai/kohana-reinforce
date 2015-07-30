@@ -211,7 +211,7 @@ class Reinforce_ORM extends Kohana_ORM {
                 ->as_object()
                 ->execute()
                 ->current();
-        return $pivot;
+        return (Array) $pivot;
     }
 
     /**
