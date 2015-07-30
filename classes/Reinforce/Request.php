@@ -15,6 +15,11 @@ defined('SYSPATH') OR die('No direct script access.');
 class Reinforce_Request extends Kohana_Request {
 
     /**
+     * @var array 包留傳入的參數的 '.' 字串 ( PHP 預設會把 $_GET,$_POST, $_COOKIE 中的 '.' 字串轉成 '_' )
+     */
+    public static $keep_dots_name = FALSE;
+
+    /**
      * @var array query parameters
      */
     protected $_put = array();
@@ -143,6 +148,12 @@ class Reinforce_Request extends Kohana_Request {
             }
 
             // Store global GET and POST data in the initial request only
+            if (self::$keep_dots_name) {
+                Request::rawfix($_GET, $_SERVER['QUERY_STRING']);
+                Request::rawfix($_POST, file_get_contents('php://input'));
+                Request::rawfix($_COOKIE, $_SERVER['HTTP_COOKIE']);
+            }
+
             $request->protocol($protocol)
                     ->query($_GET)
                     ->post($_POST);
@@ -327,6 +338,52 @@ class Reinforce_Request extends Kohana_Request {
         $this->_delete[$key] = $value;
 
         return $this;
+    }
+
+    static function rawfix(&$target, $source, $keep = false) {
+        if (!$source) {
+            return;
+        }
+        $keys = array();
+
+        $source = preg_replace_callback(
+                '/
+        # Match at start of string or &
+        (?:^|(?<=&))
+        # Exclude cases where the period is in brackets, e.g. foo[bar.blarg]
+        [^=&\[]*
+        # Affected cases: periods and spaces
+        (?:\.|%20)
+        # Keep matching until assignment, next variable, end of string or
+        # start of an array
+        [^=&\[]*
+        /x', function ($key) use (&$keys) {
+            $keys[] = $key = base64_encode(urldecode($key[0]));
+            return urlencode($key);
+        }, $source
+        );
+
+        if (!$keep) {
+            $target = array();
+        }
+
+        parse_str($source, $data);
+        foreach ($data as $key => $val) {
+            // Only unprocess encoded keys
+            if (!in_array($key, $keys)) {
+                $target[$key] = $val;
+                continue;
+            }
+
+            $key = base64_decode($key);
+            $target[$key] = $val;
+
+            if ($keep) {
+                // Keep a copy in the underscore key version
+                $key = preg_replace('/(\.| )/', '_', $key);
+                $target[$key] = $val;
+            }
+        }
     }
 
 }
