@@ -453,17 +453,17 @@ class Reinforce_ORM extends Kohana_ORM {
             $column = $this->object_name() . '.' . $column;
         }
         $string_arr = array_filter(explode('|', $string));
+        $this->and_where_open();
         foreach ($string_arr as $string) {
             if (Text::starts_with($string, '%') || Text::ends_with($string, '%')) {
-                $this->and_where_open();
-                $this->where($column, 'LIKE', $string);
-                $this->and_where_close();
+                $this->or_where($column, 'LIKE', $string);
+                //$this->and_where_close();
             } else {
-                $this->and_where_open();
-                $this->where($column, '=', $string);
-                $this->and_where_close();
+                //$this->and_where_open();
+                $this->or_where($column, '=', $string);
             }
         }
+        $this->and_where_close();
         return $this;
     }
 
@@ -594,8 +594,8 @@ class Reinforce_ORM extends Kohana_ORM {
 
             if (is_numeric($min) and is_numeric($max)) {
                 // 處理 '1~50' 或 '50~1'
-                $min = floatval(min(array($min, $max)));
-                $max = floatval(max(array($min, $max)));
+                $min = (min(array($min, $max)));
+                $max = (max(array($min, $max)));
                 $this->and_where_open();
                 $this->where($column, 'BETWEEN', array($min, $max));
                 $this->and_where_close();
@@ -614,12 +614,12 @@ class Reinforce_ORM extends Kohana_ORM {
 
         if (in_array($op, ['<', '<=', '>', '>='])) {
             $this->and_where_open();
-            $this->where($column, $op, floatval($number));
+            $this->where($column, $op, ($number));
             $this->and_where_close();
             return $this;
         } else if (is_numeric($number)) {
             $this->and_where_open();
-            $this->where($column, '=', floatval($number));
+            $this->where($column, '=', ($number));
             $this->and_where_close();
             return $this;
         }
