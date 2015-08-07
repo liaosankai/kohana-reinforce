@@ -412,7 +412,7 @@ class Reinforce_ORM extends Kohana_ORM {
         if ($far_keys !== NULL) {
             $far_keys = (array) $far_keys;
             if (!empty($far_keys)) {
-// Remove all the relationships in the array
+                // Remove all the relationships in the array
                 $query->where($this->_has_many[$alias]['far_key'], 'NOT IN', $far_keys);
             } else {
                 return $this;
@@ -448,7 +448,7 @@ class Reinforce_ORM extends Kohana_ORM {
      * 以字串是否帶有 % 開頭，自動決定使用 LIKE 或 =
      */
     public function where_string_such($column, $string) {
-// 如果欄位名稱中沒有 . ，追加自己的 object name
+        // 如果欄位名稱中沒有 . ，追加自己的 object name
         if (substr_count($column, '.') === 0) {
             $column = $this->object_name() . '.' . $column;
         }
@@ -493,7 +493,7 @@ class Reinforce_ORM extends Kohana_ORM {
         // 移除無效的字元
         $range_chars = str_split($range);
         foreach ($range_chars as $index => $char) {
-            if (!in_array($char, ['>', '=', '<', '.', '!', '~', ' ', '-', ':']) and ! is_numeric($char)) {
+            if (!in_array($char, ['>', '=', '<', '.', '!', '~', ' ', '-', ':']) or ! is_numeric($char)) {
                 unset($range_chars[$index]);
             }
         }
@@ -506,7 +506,7 @@ class Reinforce_ORM extends Kohana_ORM {
         $range = trim(rtrim($range, '>=<'));
 
         // 是否包含 '>','<','=','~' 運算子
-        // 沒有的話就將 2015 轉成 2015~2015
+        // 例如將 2015 轉成 2015~2015
         $intersect = array_intersect(str_split($range), ['>', '<', '=', '~']);
         $range = count($intersect) ? $range : "{$range}~{$range}";
 
@@ -748,15 +748,15 @@ class Reinforce_ORM extends Kohana_ORM {
         $date = Arr::get($datetime, 0, '');
         $Ymd = array_filter(explode('-', $date));
         $Y = Arr::get($Ymd, 0, '');
-        $m = Arr::get($Ymd, 1, ($isLast) ? 12 : 01);
-        $d = Arr::get($Ymd, 2, ($isLast) ? date("t", strtotime("{$Y}-{$m}-01")) : 01);
+        $m = Arr::get($Ymd, 1, ($isLast) ? '12' : '01');
+        $d = Arr::get($Ymd, 2, ($isLast) ? date("t", strtotime("{$Y}-{$m}-01")) : '01');
 
         // 處理時間部分
         $time = Arr::get($datetime, 1, '');
         $His = array_filter(explode(':', $time));
-        $H = Arr::get($His, 0, ($isLast) ? 23 : 00);
-        $i = Arr::get($His, 1, ($isLast) ? 59 : 00);
-        $s = Arr::get($His, 2, ($isLast) ? 59 : 00);
+        $H = Arr::get($His, 0, ($isLast) ? '23' : '00');
+        $i = Arr::get($His, 1, ($isLast) ? '59' : '00');
+        $s = Arr::get($His, 2, ($isLast) ? '59' : '00');
 
         return strlen($Y) ? date('Y-m-d H:i:s', mktime($H, $i, $s, $m, $d, $Y)) : '';
     }
