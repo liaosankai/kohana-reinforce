@@ -37,6 +37,14 @@ class Reinforce_ORM extends Kohana_ORM {
      */
     public function __construct($id = NULL, $pivot_relaction = NULL) {
         $this->_pivot_relaction = $pivot_relaction;
+        // 避免關聯表別名因為左右空白而起肖
+        foreach (array('_has_one', '_belongs_to', '_has_many') as $relationship) {
+            $_clear = array();
+            foreach ($this->$relationship as $alias => $relation) {
+                $_clear[trim($alias)] = $relation;
+            }
+            $this->$relationship = $_clear;
+        }
         parent::__construct($id);
     }
 
