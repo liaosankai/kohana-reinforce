@@ -55,7 +55,7 @@ class Reinforce_Request extends Kohana_Request {
             Request::$user_agent = getenv('HTTP_USER_AGENT');
 
             // Typically used to denote AJAX requests
-            $requested_with = getenv('HTTP_X_REQUESTED_WITH');
+            $requested_with = strtolower(getenv('HTTP_X_REQUESTED_WITH'));
 
             if (getenv('HTTP_X_FORWARDED_FOR') AND getenv('REMOTE_ADDR') AND in_array(getenv('REMOTE_ADDR'), Request::$trusted_proxies)) {
                 // Use the forwarded IP address, typically set when the
@@ -85,28 +85,39 @@ class Reinforce_Request extends Kohana_Request {
             // Ensure the raw body is saved for future use
             $body = ($method !== HTTP_Request::GET) ? file_get_contents('php://input') : NULL;
 
+
             // Handle raw to json data
-            $parse_json = json_decode($body, TRUE);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Request_Exception('Json Data Syntax Error');
-            } else if (is_array($parse_json)) {
-                $json_data = $parse_json;
+            if ($requested_with === 'xmlhttprequest' AND getenv('CONTENT_TYPE') === 'application/json') {
+                $parse_json = json_decode($body, TRUE);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    throw new Request_Exception('Json Data Syntax Error');
+                    $json_data = array();
+                } else if (is_array($parse_json)) {
+                    $json_data = $parse_json;
+                } else {
+                    $json_data = array();
+                }
             } else {
                 $json_data = array();
             }
 
             // Handle raw to xml
-            $xml_data = array();
-            if (empty($json_data)) {
-                libxml_use_internal_errors(TRUE);
-                $parse_xml = json_decode(json_encode(simplexml_load_string($body)), TRUE);
-                if (json_last_error() !== JSON_ERROR_NONE) {
-                    throw new Request_Exception('XML Data Syntax Error');
-                } else if (is_array($parse_xml)) {
-                    $xml_data = $parse_xml;
-                } else {
-                    $xml_data = array();
+            if ($requested_with === 'xmlhttprequest' AND getenv('CONTENT_TYPE') === 'application/xml') {
+                $xml_data = array();
+                if (empty($json_data)) {
+                    libxml_use_internal_errors(TRUE);
+                    $parse_xml = json_decode(json_encode(simplexml_load_string($body)), TRUE);
+                    if (json_last_error() !== JSON_ERROR_NONE) {
+                        throw new Request_Exception('XML Data Syntax Error');
+                        $xml_data = array();
+                    } else if (is_array($parse_xml)) {
+                        $xml_data = $parse_xml;
+                    } else {
+                        $xml_data = array();
+                    }
                 }
+            } else {
+                $xml_data = array();
             }
 
             // Handle x-www-form-urlencode data
