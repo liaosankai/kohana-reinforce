@@ -467,7 +467,7 @@ class Reinforce_ORM extends Kohana_ORM {
                 $this->or_where($column, 'LIKE', $string);
                 //$this->and_where_close();
             } else if (Text::starts_with($string, '≠')) {
-                $this->or_where($column, '!=', $string);
+                $this->or_where($column, '!=', trim($string, '≠'));
             } else {
                 $this->or_where($column, '=', $string);
             }
