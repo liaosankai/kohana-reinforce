@@ -453,7 +453,7 @@ class Reinforce_ORM extends Kohana_ORM {
     }
 
     /**
-     * 以字串是否帶有 % 開頭，自動決定使用 LIKE 或 =
+     * 以字串是否帶有 % 開頭或 ≠ 開頭，自動決定使用 LIKE 或 = 或 !=
      */
     public function where_string_such($column, $string) {
         // 如果欄位名稱中沒有 . ，追加自己的 object name
@@ -466,8 +466,9 @@ class Reinforce_ORM extends Kohana_ORM {
             if (Text::starts_with($string, '%') || Text::ends_with($string, '%')) {
                 $this->or_where($column, 'LIKE', $string);
                 //$this->and_where_close();
+            } else if (Text::starts_with($string, '≠')) {
+                $this->or_where($column, '!=', $string);
             } else {
-                //$this->and_where_open();
                 $this->or_where($column, '=', $string);
             }
         }
