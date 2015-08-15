@@ -87,7 +87,7 @@ class Reinforce_Request extends Kohana_Request {
 
 
             // Handle raw to json data
-            if ($requested_with === 'xmlhttprequest' AND getenv('CONTENT_TYPE') === 'application/json') {
+            if (getenv('CONTENT_TYPE') === 'application/json') {
                 $parse_json = json_decode($body, TRUE);
                 if (json_last_error() !== JSON_ERROR_NONE) {
                     throw new Request_Exception('Json Data Syntax Error');
@@ -102,7 +102,7 @@ class Reinforce_Request extends Kohana_Request {
             }
 
             // Handle raw to xml
-            if ($requested_with === 'xmlhttprequest' AND getenv('CONTENT_TYPE') === 'application/xml') {
+            if (getenv('CONTENT_TYPE') === 'application/xml') {
                 $xml_data = array();
                 if (empty($json_data)) {
                     libxml_use_internal_errors(TRUE);
