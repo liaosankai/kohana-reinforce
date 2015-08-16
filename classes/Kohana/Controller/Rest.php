@@ -143,9 +143,9 @@ abstract class Kohana_Controller_Rest extends Kohana_Controller {
                 // 為了能通用 IE 和其它瀏覽器，Content-Type 必需設定為 text/x-json
                 $this->response->headers('Content-Type', "text/x-json; charset=utf-8;");
                 if ($this->json_numeric_check) {
-                    $this->_content = json_encode($this->_content, JSON_NUMERIC_CHECK);
+                    $this->_content = ($this->_content === null ) ? '' : json_encode($this->_content, JSON_NUMERIC_CHECK);
                 } else {
-                    $this->_content = json_encode($this->_content);
+                    $this->_content = ($this->_content === null ) ? '' : json_encode($this->_content);
                 }
                 break;
             default:
