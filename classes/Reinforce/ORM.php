@@ -495,6 +495,7 @@ class Reinforce_ORM extends Kohana_ORM {
      * @return $query
      */
     public function where_datetime_range($column, $range) {
+
         // 如果欄位名稱中沒有 . ，追加自己的 object name
         if (substr_count($column, '.') === 0) {
             $column = $this->object_name() . '.' . $column;
@@ -502,7 +503,7 @@ class Reinforce_ORM extends Kohana_ORM {
         // 移除無效的字元
         $range_chars = str_split($range);
         foreach ($range_chars as $index => $char) {
-            if (!in_array($char, ['>', '=', '<', '.', '!', '~', ' ', '-', ':']) or ! is_numeric($char)) {
+            if (!in_array($char, array('>', '=', '<', '.', '!', '~', ' ', '-', ':')) AND ! is_numeric($char)) {
                 unset($range_chars[$index]);
             }
         }
@@ -516,7 +517,7 @@ class Reinforce_ORM extends Kohana_ORM {
 
         // 是否包含 '>','<','=','~' 運算子
         // 例如將 2015 轉成 2015~2015
-        $intersect = array_intersect(str_split($range), ['>', '<', '=', '~']);
+        $intersect = array_intersect(str_split($range), array('>', '<', '=', '~'));
         $range = count($intersect) ? $range : "{$range}~{$range}";
 
         // 將 ~2015 轉成 <=2015
@@ -525,8 +526,8 @@ class Reinforce_ORM extends Kohana_ORM {
         $range = Text::ends_with($range, '~') ? ">=" . trim($range, "~>=<") : $range;
 
         // 決定最後運算子
-        foreach (['<=', '>=', '<', '>'] as $valid_op) {
-            if (starts_with($range, $valid_op)) {
+        foreach (array('<=', '>=', '<', '>') as $valid_op) {
+            if (Text::starts_with($range, $valid_op)) {
                 $op = $valid_op;
                 break;
             }
@@ -621,7 +622,7 @@ class Reinforce_ORM extends Kohana_ORM {
         $op = preg_replace('/[0-9]+/', '', $range);
         $number = preg_replace('/[^0-9]+/', '', $range);
 
-        if (in_array($op, ['<', '<=', '>', '>='])) {
+        if (in_array($op, array('<', '<=', '>', '>='))) {
             $this->and_where_open();
             $this->where($column, $op, ($number));
             $this->and_where_close();
